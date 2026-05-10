@@ -169,6 +169,20 @@ async def run_pipeline(
     profiles_data   = [p.model_dump() for p, _, _ in profile_results]
     save_json(profiles_data, raw_dir / "profiles.json")
 
+    # ── Stage 2b: Profile HTML pages (optional) ───────────────────────────────
+    if cfg.generate_html:
+        log.info("[Stage 2b] Rendering profile pages …")
+        from src.generators.html_profiles import generate_profile_pages
+        from src.generators.html_stimuli import take_screenshots
+        project_root = Path(__file__).resolve().parents[2]
+        profile_topic_pairs = [(p, c.topic) for p, c, _ in profile_results]
+        profile_html_paths = generate_profile_pages(
+            profile_topic_pairs, cfg.output_dir / "final", project_root, cfg.seed
+        )
+        if cfg.screenshots:
+            png_dir = cfg.output_dir / "final" / "png_profiles"
+            await take_screenshots(profile_html_paths, png_dir)
+
     # ── Stage 3: Post generation ──────────────────────────────────────────────
     log.info("[Stage 3] Generating posts …")
     profile_cond_pairs = [(p, c) for p, c, _ in profile_results]

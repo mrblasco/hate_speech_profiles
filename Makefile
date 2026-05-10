@@ -27,7 +27,7 @@ generate-fast:                    ## Generate without validation judges (faster)
 	$(PY) src/main.py --n_profiles 50 --seed 42 --no-judge --no-realism --output_dir outputs/run_fast
 
 .PHONY: generate-html
-generate-html:                    ## Generate + render HTML stimuli
+generate-html:                    ## Generate + render post HTML stimuli + profile pages
 	$(PY) src/main.py --n_profiles 50 --seed 42 --html --output_dir $(OUTDIR)
 
 .PHONY: generate-screenshots
@@ -35,11 +35,11 @@ generate-screenshots:             ## Generate + render HTML + PNG screenshots (r
 	$(PY) src/main.py --n_profiles 50 --seed 42 --screenshots --output_dir $(OUTDIR)
 
 .PHONY: render
-render:                           ## Render HTML from existing stimuli.jsonl  (JSONL=outputs/run_001/final/stimuli.jsonl)
+render:                           ## Render post HTML from existing stimuli.jsonl  (JSONL=…/stimuli.jsonl)
 	$(PY) src/main.py --from-jsonl $(JSONL) --seed 42
 
 .PHONY: render-screenshots
-render-screenshots:               ## Render HTML + PNGs from existing stimuli.jsonl  (JSONL=outputs/run_001/final/stimuli.jsonl)
+render-screenshots:               ## Render post HTML + PNGs from existing stimuli.jsonl
 	$(PY) src/main.py --from-jsonl $(JSONL) --seed 42 --screenshots
 
 # ── English stimulus generation ────────────────────────────────────────────────
@@ -93,6 +93,16 @@ validate:                         ## Validate profile–comment coherence (rule-
 .PHONY: validate-fast
 validate-fast:                    ## Validate profile–comment coherence (rule-based only, no LLM)
 	$(PY) scripts/validate_matching.py --no-llm
+
+# ── Profile pages ─────────────────────────────────────────────────────────────
+
+.PHONY: profiles-html
+profiles-html:                    ## Generate profiles + render profile HTML pages
+	$(PY) src/main.py --n_profiles 50 --seed 42 --html --no-judge --no-realism --output_dir $(OUTDIR)
+
+.PHONY: profiles-screenshots
+profiles-screenshots:             ## Generate profiles + render profile HTML + PNG screenshots
+	$(PY) src/main.py --n_profiles 50 --seed 42 --screenshots --no-judge --no-realism --output_dir $(OUTDIR)
 
 # ── Inspection tools ───────────────────────────────────────────────────────────
 

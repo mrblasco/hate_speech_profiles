@@ -121,9 +121,10 @@ def parse_args() -> argparse.Namespace:
 
 
 async def _render_from_jsonl(args: argparse.Namespace) -> None:
-    """Standalone HTML (+ optional PNG) rendering from an existing stimuli.jsonl."""
+    """Render post stimuli HTML + profile pages from an existing stimuli.jsonl."""
     import json
     from src.generators.html_stimuli import generate_html_stimuli, take_screenshots
+    from src.generators.html_profiles import generate_profile_pages
     from src.models import StimulusRow
 
     jsonl_path = args.from_jsonl.resolve()
@@ -149,14 +150,35 @@ async def _render_from_jsonl(args: argparse.Namespace) -> None:
     ]
     log.info("Loaded %d rows from %s", len(rows), jsonl_path)
 
+    # ── Post stimulus pages (9 engagement variants each) ──────────────────────
     html_paths = generate_html_stimuli(rows, output_dir, _ROOT, args.seed)
 
+    # ── Profile pages (one per unique profile) ────────────────────────────────
+    seen: set[str] = set()
+    unique_profile_pairs: list[tuple[StimulusRow, str]] = []
+    for row in rows:
+        if row.profile_id not in seen:
+            seen.add(row.profile_id)
+            topic = row.topic.value if hasattr(row.topic, "value") else str(row.topic)
+            unique_profile_pairs.append((row, topic))
+    profile_html_paths = generate_profile_pages(unique_profile_pairs, output_dir, _ROOT, args.seed)
+
     if args.screenshots:
-        png_dir = output_dir / "png"
+        png_dir         = output_dir / "png"
+        png_profiles_dir = output_dir / "png_profiles"
         await take_screenshots(html_paths, png_dir)
-        print(f"Done. {len(html_paths)} PNGs written to {png_dir}/")
+        await take_screenshots(profile_html_paths, png_profiles_dir)
+        print(
+            f"Done.\n"
+            f"  {len(html_paths)} post PNGs  → {png_dir}/\n"
+            f"  {len(profile_html_paths)} profile PNGs → {png_profiles_dir}/"
+        )
     else:
-        print(f"Done. {len(html_paths)} HTML files written to {output_dir}/html/")
+        print(
+            f"Done.\n"
+            f"  {len(html_paths)} post HTML files  → {output_dir}/html/\n"
+            f"  {len(profile_html_paths)} profile HTML files → {output_dir}/html_profiles/"
+        )
 
 
 async def main() -> None:

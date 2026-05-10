@@ -1,0 +1,352 @@
+/* ============================================================
+   Instagram-Style Profile Page — Stylesheet
+   Designed for 375 × 812 px viewport (2× device pixel ratio)
+   ============================================================ */
+
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #fafafa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #262626;
+}
+
+/* ── Wrapper ────────────────────────────────────────────────── */
+.ig-wrapper {
+    width: 375px;
+    background: #ffffff;
+    border: 1px solid #dbdbdb;
+    border-top: none;
+    overflow: hidden;
+}
+
+/* ── Status Bar ────────────────────────────────────────────── */
+.status-bar {
+    height: 44px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 0 28px;
+}
+
+.status-bar .time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #262626;
+    letter-spacing: -0.3px;
+}
+
+.status-bar .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Top Navigation Bar ────────────────────────────────────── */
+.top-nav {
+    height: 44px;
+    background: #ffffff;
+    border-bottom: 1px solid #dbdbdb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.nav-back {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.nav-username {
+    font-size: 16px;
+    font-weight: 700;
+    color: #262626;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+}
+
+/* ── Profile Header ─────────────────────────────────────────── */
+.profile-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 16px 12px;
+    gap: 28px;
+}
+
+.avatar-wrap {
+    flex-shrink: 0;
+}
+
+/* Large avatar with story-ring gradient */
+.avatar-ring-lg {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.avatar-lg {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 26px;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Stats row: posts / followers / following */
+.profile-stats {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-number {
+    font-size: 17px;
+    font-weight: 700;
+    color: #262626;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #262626;
+    line-height: 1;
+}
+
+/* ── Bio Block ──────────────────────────────────────────────── */
+.bio-block {
+    padding: 0 16px 14px;
+}
+
+.bio-display-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #262626;
+    line-height: 1.4;
+}
+
+.bio-category {
+    font-size: 12px;
+    color: #8e8e8e;
+    line-height: 1.4;
+    margin-top: 1px;
+}
+
+.bio-text {
+    font-size: 14px;
+    color: #262626;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.bio-meta {
+    font-size: 12px;
+    color: #8e8e8e;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.bio-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    color: #8e8e8e;
+}
+
+.bio-meta-sep {
+    color: #dbdbdb;
+    font-size: 10px;
+}
+
+/* ── Action Buttons ─────────────────────────────────────────── */
+.profile-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 14px;
+}
+
+.btn-follow {
+    flex: 1;
+    height: 32px;
+    background: #0095f6;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-message {
+    flex: 1;
+    height: 32px;
+    background: #ffffff;
+    color: #262626;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-suggest {
+    width: 32px;
+    height: 32px;
+    background: #ffffff;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ── Story Highlights ───────────────────────────────────────── */
+.highlights-row {
+    display: flex;
+    gap: 16px;
+    padding: 4px 16px 16px;
+    overflow: hidden;
+}
+
+.highlight-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.highlight-ring {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    padding: 2px;
+    background: #dbdbdb;
+}
+
+.highlight-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.highlight-new .highlight-ring {
+    background: #ffffff;
+    border: 1px solid #dbdbdb;
+}
+
+.highlight-new .highlight-circle {
+    background: #ffffff;
+    font-size: 26px;
+    color: #262626;
+    border: none;
+}
+
+.highlight-label {
+    font-size: 11px;
+    color: #262626;
+    text-align: center;
+    max-width: 58px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Tab Bar ────────────────────────────────────────────────── */
+.tab-bar {
+    display: flex;
+    border-top: 1px solid #dbdbdb;
+    border-bottom: 1px solid #dbdbdb;
+}
+
+.tab-item {
+    flex: 1;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-item.active {
+    border-bottom-color: #262626;
+}
+
+/* ── Post Grid ──────────────────────────────────────────────── */
+.post-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+}
+
+.grid-cell {
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-cell-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-emoji {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    opacity: 0.9;
+}

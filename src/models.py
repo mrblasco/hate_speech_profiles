@@ -177,8 +177,8 @@ class StimulusRow(BaseModel):
     age_group:         AgeGroup
     gender:            Gender
     values:            Values
-    religion:          Religion
-    country_of_origin: CountryOfOrigin
+    religion:          Optional[Religion]          = None
+    country_of_origin: Optional[CountryOfOrigin]  = None
     writing_style:     str
     bio:               str
 

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<!--
+    Instagram-Style Profile Page Template
+    Rendered by html_profiles.py via Jinja2 + Playwright
+    Variables: username, display_name, avatar_initials, avatar_colour,
+               bio, post_count, followers, following,
+               highlight_items (list of {emoji, label}),
+               grid_items (list of 9 {gradient, emoji}),
+               topic, values, religion, country_of_origin, topic_emoji
+-->
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=375, initial-scale=1.0">
+    <title>Profile – {{ username }}</title>
+    <style>{{ css }}</style>
+</head>
+<body>
+<div class="ig-wrapper">
+
+    <!-- ── Status Bar ─────────────────────────────────────── -->
+    <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+                <rect x="0"  y="8" width="3" height="4" rx="0.5" fill="#262626"/>
+                <rect x="4.5" y="5" width="3" height="7" rx="0.5" fill="#262626"/>
+                <rect x="9"  y="2" width="3" height="10" rx="0.5" fill="#262626"/>
+                <rect x="13.5" y="0" width="3" height="12" rx="0.5" fill="#262626" opacity="0.35"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                <path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="#262626"/>
+                <path d="M3.76 7.26a6 6 0 0 1 8.48 0" stroke="#262626" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M1 4.5a10 10 0 0 1 14 0" stroke="#262626" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+                <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#262626" stroke-opacity="0.35"/>
+                <rect x="2" y="2" width="16" height="8" rx="2" fill="#262626"/>
+                <path d="M23 4v4a2 2 0 0 0 0-4z" fill="#262626" opacity="0.4"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ── Top Navigation ─────────────────────────────────── -->
+    <div class="top-nav">
+        <div class="nav-back">
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                <path d="M9 1L1 9l8 8" stroke="#262626" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <span class="nav-username">{{ username }}</span>
+
+        <div class="nav-actions">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="5"  r="1.5" fill="#262626"/>
+                <circle cx="12" cy="12" r="1.5" fill="#262626"/>
+                <circle cx="12" cy="19" r="1.5" fill="#262626"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ── Profile Header ─────────────────────────────────── -->
+    <div class="profile-header">
+        <div class="avatar-wrap">
+            <div class="avatar-ring-lg">
+                <div class="avatar-lg" style="background-color: {{ avatar_colour }};">
+                    {{ avatar_initials }}
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-number">{{ post_count }}</span>
+                <span class="stat-label">posts</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ followers }}</span>
+                <span class="stat-label">followers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ following }}</span>
+                <span class="stat-label">following</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Bio Block ──────────────────────────────────────── -->
+    <div class="bio-block">
+        <div class="bio-display-name">{{ display_name }}</div>
+        <div class="bio-category">{{ topic_emoji }} {{ topic | replace("_", " ") | title }}</div>
+        <div class="bio-text">{{ bio }}</div>
+        <div class="bio-meta">
+            <span class="bio-meta-chip">🌍 {{ country_of_origin }}</span>
+            <span class="bio-meta-sep">·</span>
+            <span class="bio-meta-chip">{{ religion_emoji }} {{ religion }}</span>
+            <span class="bio-meta-sep">·</span>
+            <span class="bio-meta-chip">{{ values | title }}</span>
+        </div>
+    </div>
+
+    <!-- ── Action Buttons ─────────────────────────────────── -->
+    <div class="profile-actions">
+        <button class="btn-follow">Follow</button>
+        <button class="btn-message">Message</button>
+        <button class="btn-suggest">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7h12" stroke="#262626" stroke-width="2"
+                      stroke-linecap="round"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- ── Story Highlights ───────────────────────────────── -->
+    <div class="highlights-row">
+        <div class="highlight-item highlight-new">
+            <div class="highlight-ring">
+                <div class="highlight-circle">+</div>
+            </div>
+            <span class="highlight-label">New</span>
+        </div>
+        {% for h in highlight_items %}
+        <div class="highlight-item">
+            <div class="highlight-ring">
+                <div class="highlight-circle" style="background: {{ h.gradient }};">
+                    <span style="filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));">{{ h.emoji }}</span>
+                </div>
+            </div>
+            <span class="highlight-label">{{ h.label }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ── Tab Bar ────────────────────────────────────────── -->
+    <div class="tab-bar">
+        <!-- Posts grid (active) -->
+        <div class="tab-item active">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" rx="1" fill="#262626"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" fill="#262626"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" fill="#262626"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" fill="#262626"/>
+            </svg>
+        </div>
+        <!-- Reels -->
+        <div class="tab-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#262626" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="3" stroke="#262626" stroke-width="1.5"/>
+                <line x1="12" y1="3" x2="12" y2="6"  stroke="#262626" stroke-width="1.5"/>
+                <line x1="12" y1="18" x2="12" y2="21" stroke="#262626" stroke-width="1.5"/>
+                <line x1="3"  y1="12" x2="6"  y2="12" stroke="#262626" stroke-width="1.5"/>
+                <line x1="18" y1="12" x2="21" y2="12" stroke="#262626" stroke-width="1.5"/>
+            </svg>
+        </div>
+        <!-- Tagged -->
+        <div class="tab-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+                      stroke="#262626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="7" y1="7" x2="7.01" y2="7" stroke="#262626" stroke-width="2"
+                      stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ── Post Grid ──────────────────────────────────────── -->
+    <div class="post-grid">
+        {% for cell in grid_items %}
+        <div class="grid-cell">
+            <div class="grid-cell-inner" style="background: {{ cell.gradient }};">
+                <span class="grid-emoji">{{ cell.emoji }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div><!-- /.ig-wrapper -->
+</body>
+</html>
