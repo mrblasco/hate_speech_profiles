@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<!--
+    Instagram-Style Vignette Stimulus Template
+    Rendered by pipeline.py via Jinja2 + Playwright
+    Variables injected: username, display_name, avatar_initials, avatar_colour,
+                        target_message, commenter_username, comment_text,
+                        likes, comments_count, topic_gradient, topic_emoji
+-->
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=375, initial-scale=1.0">
+    <title>Post – {{ username }}</title>
+    <style>
+        /* ── Inline style to keep HTML self-contained for Playwright ── */
+        {{ css }}
+    </style>
+</head>
+<body>
+<div class="ig-wrapper">
+
+    <!-- ── Status Bar ─────────────────────────────────────── -->
+    <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+            <!-- Signal bars -->
+            <svg class="signal" width="17" height="12" viewBox="0 0 17 12" fill="none">
+                <rect x="0"  y="8" width="3" height="4" rx="0.5" fill="#262626"/>
+                <rect x="4.5" y="5" width="3" height="7" rx="0.5" fill="#262626"/>
+                <rect x="9"  y="2" width="3" height="10" rx="0.5" fill="#262626"/>
+                <rect x="13.5" y="0" width="3" height="12" rx="0.5" fill="#262626" opacity="0.35"/>
+            </svg>
+            <!-- Wi-Fi -->
+            <svg class="wifi" width="16" height="12" viewBox="0 0 16 12" fill="none">
+                <path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="#262626"/>
+                <path d="M3.76 7.26a6 6 0 0 1 8.48 0" stroke="#262626" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M1 4.5a10 10 0 0 1 14 0" stroke="#262626" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+            </svg>
+            <!-- Battery -->
+            <svg class="battery" width="25" height="12" viewBox="0 0 25 12" fill="none">
+                <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#262626" stroke-opacity="0.35"/>
+                <rect x="2" y="2" width="16" height="8" rx="2" fill="#262626"/>
+                <path d="M23 4v4a2 2 0 0 0 0-4z" fill="#262626" opacity="0.4"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ── Top Navigation ─────────────────────────────────── -->
+    <div class="top-nav">
+        <!-- Back chevron -->
+        <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+            <path d="M9 1L1 9l8 8" stroke="#262626" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+
+        <span class="nav-title">{{ username }}</span>
+
+        <div class="nav-icons">
+            <!-- Heart (notifications) -->
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                      stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <!-- Messenger -->
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                      stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ── Post ───────────────────────────────────────────── -->
+
+    <!-- Post header: avatar + username + menu -->
+    <div class="post-header">
+        <div class="avatar-ring">
+            <div class="avatar" style="background-color: {{ avatar_colour }};">
+                {{ avatar_initials }}
+            </div>
+        </div>
+        <div class="post-author">
+            <div class="post-username">{{ username }}</div>
+            <div class="post-display-name">{{ display_name }}</div>
+        </div>
+        <button class="post-more-btn" aria-label="More options">···</button>
+    </div>
+
+    <!-- Post media: topic-coloured quote card -->
+    <div class="post-media" style="background: {{ topic_gradient }};">
+        <div class="post-media-inner">
+            <span class="post-topic-emoji">{{ topic_emoji }}</span>
+            <p class="post-media-quote">{{ target_message }}</p>
+        </div>
+    </div>
+
+    <!-- Action bar: heart / comment / share / bookmark -->
+    <div class="post-actions">
+        <div class="actions-left">
+            <!-- Heart -->
+            <button class="action-btn" aria-label="Like">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                          stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <!-- Comment bubble -->
+            <button class="action-btn" aria-label="Comment">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                          stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <!-- Paper plane (share) -->
+            <button class="action-btn" aria-label="Share">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <line x1="22" y1="2" x2="11" y2="13" stroke="#262626" stroke-width="2" stroke-linecap="round"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"
+                             stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </button>
+        </div>
+        <!-- Bookmark -->
+        <button class="action-btn" aria-label="Save">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+                      stroke="#262626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Likes count / caption / comments -->
+    <div class="post-body">
+        <p class="post-likes">{{ ui_likes }}</p>
+
+        <p class="post-caption">
+            <span class="caption-author">{{ username }}</span><span class="caption-more">{{ ui_more }}</span>
+        </p>
+
+        {% if comments_count | int > 5 %}
+        <span class="post-view-comments">{{ ui_view_all }}</span>
+        {% else %}
+        <span class="post-view-comments">{{ ui_view }}</span>
+        {% endif %}
+
+        <!-- Hateful comment (the experimental stimulus) -->
+        <p class="post-comment">
+            <span class="comment-author">{{ commenter_username }}</span>
+            <span class="comment-text">{{ comment_text }}</span>
+        </p>
+
+        <p class="post-timestamp">{{ post_age }}</p>
+    </div>
+
+</div><!-- /.ig-wrapper -->
+</body>
+</html>
