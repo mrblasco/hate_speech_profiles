@@ -6,7 +6,7 @@
                         target_message, commenter_username, comment_text,
                         likes, comments_count, topic_gradient, topic_emoji
 -->
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=375, initial-scale=1.0">
@@ -53,7 +53,7 @@
                   stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
 
-        <!-- <span class="ig-logo">Instagram</span> -->
+        <span class="nav-title">{{ username }}</span>
 
         <div class="nav-icons">
             <!-- Heart (notifications) -->
@@ -130,14 +130,17 @@
 
     <!-- Likes count / caption / comments -->
     <div class="post-body">
-        <p class="post-likes">{{ likes }} likes</p>
+        <p class="post-likes">{{ ui_likes }}</p>
 
         <p class="post-caption">
-            <span class="caption-author">{{ username }}</span>{{ target_message }}
-            <span class="caption-more">more</span>
+            <span class="caption-author">{{ username }}</span><span class="caption-more">{{ ui_more }}</span>
         </p>
 
-        <span class="post-view-comments">View all {{ comments_count }} comments</span>
+        {% if comments_count | int > 5 %}
+        <span class="post-view-comments">{{ ui_view_all }}</span>
+        {% else %}
+        <span class="post-view-comments">{{ ui_view }}</span>
+        {% endif %}
 
         <!-- Hateful comment (the experimental stimulus) -->
         <p class="post-comment">
@@ -146,13 +149,6 @@
         </p>
 
         <p class="post-timestamp">{{ post_age }}</p>
-    </div>
-
-    <!-- Add-comment input row -->
-    <div class="add-comment-row">
-        <div class="add-comment-avatar"></div>
-        <span class="add-comment-placeholder">Add a comment…</span>
-        <span class="add-comment-emoji">😊 🙏 ❤️</span>
     </div>
 
 </div><!-- /.ig-wrapper -->

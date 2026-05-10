@@ -34,7 +34,7 @@ TOPICS           = ["Racism / ethnicity", "Religion (Muslim / Jewish)", "Immigra
                     "Nationalism / identity politics"]
 SEVERITIES       = ["opinion", "dehumanising", "incitement"]
 IDEOLOGIES       = ["conservative", "progressive"]
-AGE_GROUPS       = ["young_adult", "middle_adult"]
+AGE_GROUPS       = ["young_adult", "adolescent"]
 ENGAGEMENT_LEVELS = ["low", "medium", "high"]
 
 # ──────────────────────────────────────────────────────────────────────────────

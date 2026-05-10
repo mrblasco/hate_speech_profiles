@@ -52,7 +52,10 @@ N_VIGNETTES_PER_RESPONDENT = 6   # one per topic
 # Batch size for concurrent Playwright page renders
 SCREENSHOT_BATCH_SIZE = 20
 
-# Input / output paths
+# Country code — overridden at runtime by --country flag
+COUNTRY = "en"
+
+# Input / output paths (recalculated in main() when COUNTRY != "en")
 DATA_DIR      = Path("data")
 OUTPUT_DIR    = Path("output")
 HTML_DIR      = OUTPUT_DIR / "html"
@@ -102,8 +105,53 @@ TOPIC_EMOJIS = {
 }
 
 # Post-age strings to keep the timestamp realistic
+# (overridden per country in main())
 POST_AGES = ["2 HOURS AGO", "3 HOURS AGO", "4 HOURS AGO",
              "5 HOURS AGO", "6 HOURS AGO", "8 HOURS AGO"]
+
+# Localised UI strings keyed by country code
+UI_STRINGS: dict[str, dict] = {
+    "en": {
+        "likes":    "likes",
+        "view_all": "View all {n} comments",
+        "view":     "View {n} comments",
+        "more":     "… more",
+        "post_ages": ["2 HOURS AGO", "3 HOURS AGO", "4 HOURS AGO",
+                      "5 HOURS AGO", "6 HOURS AGO", "8 HOURS AGO"],
+    },
+    "it": {
+        "likes":    "Mi piace",
+        "view_all": "Visualizza tutti i {n} commenti",
+        "view":     "Visualizza {n} commenti",
+        "more":     "… altro",
+        "post_ages": ["2 ORE FA", "3 ORE FA", "4 ORE FA",
+                      "5 ORE FA", "6 ORE FA", "8 ORE FA"],
+    },
+    "es": {
+        "likes":    "Me gusta",
+        "view_all": "Ver los {n} comentarios",
+        "view":     "Ver {n} comentarios",
+        "more":     "… más",
+        "post_ages": ["HACE 2 HORAS", "HACE 3 HORAS", "HACE 4 HORAS",
+                      "HACE 5 HORAS", "HACE 6 HORAS", "HACE 8 HORAS"],
+    },
+    "fr": {
+        "likes":    "J'aime",
+        "view_all": "Voir les {n} commentaires",
+        "view":     "Voir {n} commentaires",
+        "more":     "… plus",
+        "post_ages": ["IL Y A 2 H", "IL Y A 3 H", "IL Y A 4 H",
+                      "IL Y A 5 H", "IL Y A 6 H", "IL Y A 8 H"],
+    },
+    "de": {
+        "likes":    "Gefällt mir",
+        "view_all": "Alle {n} Kommentare ansehen",
+        "view":     "{n} Kommentare ansehen",
+        "more":     "… mehr",
+        "post_ages": ["VOR 2 STUNDEN", "VOR 3 STUNDEN", "VOR 4 STUNDEN",
+                      "VOR 5 STUNDEN", "VOR 6 STUNDEN", "VOR 8 STUNDEN"],
+    },
+}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Logging
@@ -133,7 +181,7 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     profiles   = pd.read_csv(DATA_DIR / "profiles.csv")
     comments   = pd.read_csv(DATA_DIR / "hate_comments.csv")
-    engagement = pd.read_csv(DATA_DIR / "engagement.csv")
+    engagement = pd.read_csv(Path("data") / "engagement.csv")  # shared across countries
 
     # ── Column validation ────────────────────────────────────────────────────
     required = {
@@ -238,9 +286,39 @@ def assign_content(
     log.info("Assigning content to design cells …")
 
     # ── Build keyed lookup dicts for fast access ─────────────────────────────
+    # Cross-ideological matching: conservative hate → progressive profiles and vice-versa.
+    # Requires profiles.csv to have an 'ideology' column (added by prepare_data.py).
+    has_profile_ideology = "ideology" in profiles_df.columns
+
     profile_idx: dict[tuple, list] = {}
-    for (topic, age_group), grp in profiles_df.groupby(["topic", "age_group"]):
-        profile_idx[(topic, age_group)] = grp.to_dict("records")
+    if has_profile_ideology:
+        for (topic, age_group, ideology), grp in profiles_df.groupby(
+            ["topic", "age_group", "ideology"]
+        ):
+            profile_idx[(topic, age_group, ideology)] = grp.to_dict("records")
+
+        # Warn if any (topic, age_group, ideology) cell is missing — the pipeline
+        # will fall back to same-ideology profiles for those cells.
+        import itertools as _it
+        missing_cells = [
+            (t, a, i)
+            for t, a, i in _it.product(
+                profiles_df["topic"].unique(),
+                profiles_df["age_group"].unique(),
+                ["conservative", "progressive"],
+            )
+            if (t, a, i) not in profile_idx
+        ]
+        if missing_cells:
+            log.warning(
+                f"  {len(missing_cells)} profile cells missing ideology coverage "
+                f"(run generate_conservative_profiles.py --merge to fix):"
+            )
+            for t, a, i in missing_cells[:6]:
+                log.warning(f"    topic={t}, age_group={a}, ideology={i}")
+    else:
+        for (topic, age_group), grp in profiles_df.groupby(["topic", "age_group"]):
+            profile_idx[(topic, age_group)] = grp.to_dict("records")
 
     comment_idx: dict[tuple, list] = {}
     for (topic, severity, ideology), grp in comments_df.groupby(
@@ -266,16 +344,42 @@ def assign_content(
             eng_level = row["engagement_level"]
 
             # ── Profile selection ────────────────────────────────────────────
+            if has_profile_ideology:
+                # Cross-ideological constraint: hate ideology determines which
+                # profile ideology pool to draw from (opposites attract).
+                profile_ideology = "progressive" if ideology == "conservative" else "conservative"
+                key = (topic, age_group, profile_ideology)
+            else:
+                key = (topic, age_group)
+
             candidates = [
-                p for p in profile_idx.get((topic, age_group), [])
+                p for p in profile_idx.get(key, [])
                 if p["profile_id"] not in used_profile_ids
             ]
-            # Fallback: allow reuse if all profiles for this cell are exhausted
+            # Fallback 1: allow reuse if all profiles for this cell are exhausted
             if not candidates:
-                candidates = profile_idx.get((topic, age_group), [])
+                candidates = profile_idx.get(key, [])
+            # Fallback 2: no profiles for this ideology yet — use any profile for
+            # this (topic, age_group) regardless of ideology, with a warning.
+            if not candidates and has_profile_ideology:
+                fallback_key = next(
+                    (k for k in profile_idx if k[0] == topic and k[1] == age_group),
+                    None,
+                )
+                if fallback_key:
+                    candidates = [
+                        p for p in profile_idx[fallback_key]
+                        if p["profile_id"] not in used_profile_ids
+                    ] or profile_idx[fallback_key]
+                    log.warning(
+                        f"No {profile_ideology} profiles for topic={topic}, "
+                        f"age_group={age_group} — using fallback ideology. "
+                        f"Run generate_conservative_profiles.py --merge to fix."
+                    )
             if not candidates:
                 raise ValueError(
                     f"No profiles found for topic={topic}, age_group={age_group}"
+                    + (f", ideology={profile_ideology}" if has_profile_ideology else "")
                 )
             profile = candidates[rng.integers(len(candidates))]
             used_profile_ids.add(profile["profile_id"])
@@ -303,6 +407,7 @@ def assign_content(
             result_rows.append({
                 **row.to_dict(),
                 "profile_id":         profile["profile_id"],
+                "profile_ideology":   profile.get("ideology", ""),
                 "username":           profile["username"],
                 "display_name":       profile["display_name"],
                 "avatar_initials":    profile["avatar_initials"],
@@ -388,11 +493,13 @@ def generate_html_stimuli(
     template       = env.get_template("instagram_post.html")
     unique_stimuli = metadata_df.drop_duplicates("stimulus_id").copy()
     html_paths     = []
+    _ui            = UI_STRINGS[COUNTRY]
 
     for _, row in unique_stimuli.iterrows():
         html_filename = row["stimulus_filename"].replace(".png", ".html")
         html_path     = HTML_DIR / html_filename
 
+        _n = f"{int(row['comments_count']):,}"
         context = {
             "css":                css_content,
             "username":           row["username"],
@@ -403,13 +510,19 @@ def generate_html_stimuli(
             "commenter_username": row["commenter_username"],
             "comment_text":       row["comment_text"],
             "likes":              f"{int(row['likes']):,}",
-            "comments_count":     f"{int(row['comments_count']):,}",
+            "comments_count":     _n,
             "topic_gradient":     TOPIC_GRADIENTS.get(
                                       row["topic"],
                                       "linear-gradient(135deg, #667eea, #764ba2)"
                                   ),
             "topic_emoji":        TOPIC_EMOJIS.get(row["topic"], "📱"),
             "post_age":           row["post_age"],
+            # i18n UI strings
+            "lang":        COUNTRY,
+            "ui_likes":    f"{int(row['likes']):,} {_ui['likes']}",
+            "ui_view_all": _ui["view_all"].format(n=_n),
+            "ui_view":     _ui["view"].format(n=_n),
+            "ui_more":     _ui["more"],
         }
 
         html_path.write_text(template.render(**context), encoding="utf-8")
@@ -512,7 +625,23 @@ def main() -> None:
         "--skip-screenshots", action="store_true",
         help="Generate metadata + HTML only; skip Playwright rendering"
     )
+    parser.add_argument(
+        "--country", default="en",
+        choices=["en", "it", "es", "fr", "de"],
+        help="Country code for localised data and output (default: en)"
+    )
     args = parser.parse_args()
+
+    # ── Apply country-specific path and string overrides ─────────────────────
+    global COUNTRY, DATA_DIR, OUTPUT_DIR, HTML_DIR, PNG_DIR, METADATA_DIR, POST_AGES
+    COUNTRY = args.country
+    if COUNTRY != "en":
+        DATA_DIR     = Path("data/countries") / COUNTRY
+        OUTPUT_DIR   = Path("output") / COUNTRY
+        HTML_DIR     = OUTPUT_DIR / "html"
+        PNG_DIR      = OUTPUT_DIR / "png"
+        METADATA_DIR = OUTPUT_DIR / "metadata"
+    POST_AGES = UI_STRINGS[COUNTRY]["post_ages"]
 
     rng = np.random.default_rng(args.seed)
 
