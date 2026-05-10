@@ -1,0 +1,99 @@
+## Experimental design parameters for hate speech vignette study
+## All generation is deterministic given these parameters + seed.
+
+study:
+  name: "hate_speech_escalation_vignettes"
+  version: "1.0.0"
+
+design:
+  topics:
+    - immigration
+    - feminism
+    - religion
+    - climate
+    - public_health
+    - national_identity
+
+  age_groups:
+    - adolescent     # 13–17
+    - young_adult    # 18–25
+
+  genders:
+    - male
+    - female
+    - nonbinary
+
+  values:
+    - progressive
+    - conservative
+
+  religions:
+    - Muslim
+    - Christian
+    - Jewish
+
+  countries_of_origin:
+    - Italy
+    - Spain
+    - France
+
+  comment_severities:
+    - opposing_opinion
+    - dehumanising
+    - inciting_violence
+
+  # Age ranges per group
+  age_ranges:
+    adolescent:
+      min: 13
+      max: 17
+    young_adult:
+      min: 18
+      max: 25
+
+generation:
+  # Default number of profiles to generate
+  n_profiles: 50
+
+  # LLM generation parameters
+  temperature: 0.9
+  max_tokens: 1024
+
+  # Retry / rate limiting
+  max_retries: 3
+  retry_delay_seconds: 5
+  requests_per_minute: 30
+
+  # Async concurrency limit
+  concurrency: 5
+
+  # Post word count constraints
+  post_min_words: 15
+  post_max_words: 40
+
+  # Fuzzy deduplication threshold (0–1; lower = stricter)
+  dedup_threshold: 0.85
+
+  # Cache LLM responses to disk for reproducibility
+  enable_cache: true
+
+validation:
+  # Run LLM judge for severity classification
+  enable_severity_judge: true
+
+  # Fraction of posts sampled for realism check
+  realism_sample_rate: 1.0
+
+  # Minimum judge agreement rate before warning
+  min_judge_agreement: 0.80
+
+  # Reject items where judge disagrees with intended severity
+  reject_on_mismatch: true
+
+output:
+  formats:
+    - csv
+    - jsonl
+    - json_metadata
+  log_prompts: true
+  save_intermediate: true

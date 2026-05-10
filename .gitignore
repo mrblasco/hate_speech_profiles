@@ -57,3 +57,5 @@ Thumbs.db
 .claude/
 .idea/
 *.swp
+.env*
+outputs/

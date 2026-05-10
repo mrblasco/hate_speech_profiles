@@ -1,0 +1,87 @@
+## Content rules applied during generation and validation.
+## These are enforced both in prompts and in post-hoc validators.
+
+post_rules:
+  must_express_opinion: true
+  may_be_polarizing: true
+  never_hate_speech: true
+  never_slurs: true
+  style: "realistic Instagram caption"
+  min_words: 15
+  max_words: 40
+  allowed_elements:
+    - hashtags
+    - emojis
+    - personal_anecdote_framing
+
+  forbidden_patterns:
+    - "kill"
+    - "die"
+    - "exterminate"
+    - "subhuman"
+    - "vermin"
+    - "cockroach"
+    - "ape"
+    - "monkey"
+    - "nigger"
+    - "faggot"
+    - "kike"
+    - "spic"
+    - "chink"
+    - "cunt"
+    - "bitch"
+    - "rape"
+    - "lynch"
+    - "gas the"
+    - "final solution"
+
+comment_rules:
+  opposing_opinion:
+    description: >
+      Expresses strong disagreement or a contrasting viewpoint. May be blunt
+      or dismissive but does not attack the person's humanity. No slurs.
+      Tone: argumentative, frustrated, condescending — but civil in that it
+      targets the idea, not the group identity.
+    max_toxicity_estimate: 0.35
+    contains_explicit_violence: false
+
+  dehumanising:
+    description: >
+      Attacks the poster's group identity in terms that strip them of dignity
+      or humanity. Uses othering language ("those people", "these creatures"),
+      stereotyping, or disgust framing. May include coded language.
+      Does NOT include explicit calls to violence.
+    toxicity_estimate_range: [0.50, 0.80]
+    contains_explicit_violence: false
+
+  inciting_violence:
+    description: >
+      Moves beyond dehumanisation to explicit threat, call-to-action, or
+      endorsement of violence against the poster's group. Includes phrases
+      like "should be removed", "deserve what's coming", "someone should",
+      direct threats, or celebration of violence.
+    min_toxicity_estimate: 0.75
+    contains_explicit_violence: true
+
+profile_rules:
+  username_format: "lowercase_with_dots_or_underscores"
+  bio_max_chars: 150
+  interests_count: 3
+  writing_style_descriptors:
+    - "casual"
+    - "formal"
+    - "emoji-heavy"
+    - "hashtag-heavy"
+    - "reflective"
+    - "confrontational"
+    - "humorous"
+    - "earnest"
+
+severity_judge:
+  classification:
+    1: opposing_opinion
+    2: dehumanising
+    3: inciting_violence
+  prompt_role: >
+    You are a trained hate speech annotation expert. Your task is to classify
+    a social media comment on a severity scale from 1 to 3.

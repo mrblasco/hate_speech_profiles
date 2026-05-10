@@ -1,24 +1,56 @@
-PY      := .venv/bin/python3.13
+PY      := .venv/bin/python3
 PIP     := .venv/bin/pip
 COUNTRY ?= en
+OUTDIR  ?= outputs/run_001
+JSONL	?= $(OUTDIR)/final/stimuli.jsonl
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
 
 .PHONY: install
 install:                          ## Create venv, install deps, install Chromium
-	python3.13 -m venv .venv
-	$(PIP) install numpy pandas jinja2 playwright anthropic
+	python3 -m venv .venv
+	$(PIP) install -r requirements.txt
 	.venv/bin/playwright install chromium
+
+# ── LLM generation pipeline (src/) ────────────────────────────────────────────
+
+.PHONY: generate
+generate:                         ## Run LLM generation pipeline (default: 50 profiles, seed 42)
+	$(PY) src/main.py --n_profiles 50 --seed 42 --output_dir $(OUTDIR)
+
+.PHONY: generate-dry
+generate-dry:                     ## Dry-run: print design matrix, no API calls
+	$(PY) src/main.py --n_profiles 50 --dry-run
+
+.PHONY: generate-fast
+generate-fast:                    ## Generate without validation judges (faster)
+	$(PY) src/main.py --n_profiles 50 --seed 42 --no-judge --no-realism --output_dir outputs/run_fast
+
+.PHONY: generate-html
+generate-html:                    ## Generate + render HTML stimuli
+	$(PY) src/main.py --n_profiles 50 --seed 42 --html --output_dir $(OUTDIR)
+
+.PHONY: generate-screenshots
+generate-screenshots:             ## Generate + render HTML + PNG screenshots (requires playwright)
+	$(PY) src/main.py --n_profiles 50 --seed 42 --screenshots --output_dir $(OUTDIR)
+
+.PHONY: render
+render:                           ## Render HTML from existing stimuli.jsonl  (JSONL=outputs/run_001/final/stimuli.jsonl)
+	$(PY) src/main.py --from-jsonl $(JSONL) --seed 42
+
+.PHONY: render-screenshots
+render-screenshots:               ## Render HTML + PNGs from existing stimuli.jsonl  (JSONL=outputs/run_001/final/stimuli.jsonl)
+	$(PY) src/main.py --from-jsonl $(JSONL) --seed 42 --screenshots
 
 # ── English stimulus generation ────────────────────────────────────────────────
 
 .PHONY: pipeline
 pipeline:                         ## Generate HTML + PNG stimuli (English)
-	$(PY) pipeline.py
+	$(PY) scripts/pipeline.py
 
 .PHONY: pipeline-html
 pipeline-html:                    ## Generate HTML stimuli only, skip screenshots (English)
-	$(PY) pipeline.py --skip-screenshots
+	$(PY) scripts/pipeline.py --skip-screenshots
 
 # ── Country adaptation ─────────────────────────────────────────────────────────
 # Usage:  make adapt COUNTRY=it
@@ -27,15 +59,15 @@ pipeline-html:                    ## Generate HTML stimuli only, skip screenshot
 
 .PHONY: adapt
 adapt:                            ## Translate profiles + comments via Claude API  (COUNTRY=it|es|fr|de)
-	$(PY) generate_country_data.py --country $(COUNTRY)
+	$(PY) scripts/generate_country_data.py --country $(COUNTRY)
 
 .PHONY: stimuli
 stimuli:                          ## Generate HTML + PNG stimuli for a country  (COUNTRY=it|es|fr|de)
-	$(PY) pipeline.py --country $(COUNTRY)
+	$(PY) scripts/pipeline.py --country $(COUNTRY)
 
 .PHONY: stimuli-html
 stimuli-html:                     ## Generate HTML stimuli only for a country  (COUNTRY=it|es|fr|de)
-	$(PY) pipeline.py --country $(COUNTRY) --skip-screenshots
+	$(PY) scripts/pipeline.py --country $(COUNTRY) --skip-screenshots
 
 .PHONY: country
 country: adapt stimuli-html       ## Full country run: adapt content then generate HTML  (COUNTRY=it|es|fr|de)
@@ -44,37 +76,37 @@ country: adapt stimuli-html       ## Full country run: adapt content then genera
 
 .PHONY: prepare
 prepare:                          ## Annotate CSVs with ideology + identity_tags + target_tag
-	$(PY) prepare_data.py
+	$(PY) scripts/prepare_data.py
 
 .PHONY: gen-conservative
 gen-conservative:                 ## Generate conservative profiles via Claude API → data/conservative_profiles.csv
-	$(PY) generate_conservative_profiles.py
+	$(PY) scripts/generate_conservative_profiles.py
 
 .PHONY: merge-conservative
 merge-conservative:               ## Generate + merge conservative profiles into data/profiles.csv
-	$(PY) generate_conservative_profiles.py --merge
+	$(PY) scripts/generate_conservative_profiles.py --merge
 
 .PHONY: validate
 validate:                         ## Validate profile–comment coherence (rule-based + LLM sample)
-	$(PY) validate_matching.py
+	$(PY) scripts/validate_matching.py
 
 .PHONY: validate-fast
 validate-fast:                    ## Validate profile–comment coherence (rule-based only, no LLM)
-	$(PY) validate_matching.py --no-llm
+	$(PY) scripts/validate_matching.py --no-llm
 
 # ── Inspection tools ───────────────────────────────────────────────────────────
 
 .PHONY: visualise
 visualise:                        ## Build input-data dashboard  → output/visualise_inputs.html
-	$(PY) visualise_inputs.py
+	$(PY) scripts/visualise_inputs.py
 
 .PHONY: inspect
 inspect:                          ## Build respondent inspector  → output/inspect_respondents.html
-	$(PY) inspect_respondents.py
+	$(PY) scripts/inspect_respondents.py
 
 .PHONY: verify
 verify:                           ## Check factorial balance of the design
-	$(PY) verify_balance.py
+	$(PY) scripts/verify_balance.py
 
 # ── Housekeeping ───────────────────────────────────────────────────────────────
 

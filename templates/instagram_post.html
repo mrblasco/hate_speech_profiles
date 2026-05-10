@@ -133,7 +133,7 @@
         <p class="post-likes">{{ ui_likes }}</p>
 
         <p class="post-caption">
-            <span class="caption-author">{{ username }}</span><span class="caption-more">{{ ui_more }}</span>
+            <span class="caption-author">{{ username }}</span> {{ caption_preview }}{% if caption_truncated %}<span class="caption-more"> {{ ui_more }}</span>{% endif %}
         </p>
 
         {% if comments_count | int > 5 %}

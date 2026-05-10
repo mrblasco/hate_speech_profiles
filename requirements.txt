@@ -1,4 +1,14 @@
+# Core data
 pandas>=2.0
 numpy>=1.24
+
+# HTML stimulus rendering (existing pipeline)
 jinja2>=3.1
 playwright>=1.40
+
+# LLM generation pipeline (src/)
+openai>=1.30
+anthropic>=0.28         # existing scripts use Anthropic directly
+pydantic>=2.7
+pyyaml>=6.0
+python-dotenv>=1.0
