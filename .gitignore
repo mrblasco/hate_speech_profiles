@@ -1,0 +1,59 @@
+# ==========================================
+# 1. DATA FILES (Preventing repo bloat)
+# ==========================================
+# Large datasets should be stored locally or in S3/Cloud, not Git
+data/
+*.csv
+*.csv.gz
+*.jsonl
+*.parquet
+*.feather
+*.pkl
+*.h5
+*.sqlite
+*.db
+
+# Large compressed archives
+*.zip
+*.tar.gz
+*.7z
+
+# ==========================================
+# 2. PYTHON SPECIFIC
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+dist/
+build/
+
+# ==========================================
+# 3. R SPECIFIC
+# ==========================================
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rdata
+*.Rhist
+.Rcache/
+# Ignore RStudio's temporary workspace files
+.Rsession
+
+# ==========================================
+# 5. OS & IDE SPECIFIC (Universal)
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.claude/
+.idea/
+*.swp
