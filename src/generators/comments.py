@@ -25,11 +25,7 @@ from src.utils.seeds import derive_seed
 
 log = logging.getLogger("pipeline.generators.comments")
 
-SEVERITIES = [
-    CommentSeverity.opposing_opinion,
-    CommentSeverity.dehumanising,
-    CommentSeverity.inciting_violence,
-]
+SEVERITIES = list(CommentSeverity)
 
 
 async def generate_comment(
@@ -48,13 +44,13 @@ async def generate_comment(
     """
     comment_id = f"{post.post_id}_{severity.value.upper()[:3]}{comment_index:02d}"
     seed = derive_seed(base_seed, "comment", comment_id)
-    target_group = get_target_group(condition.topic, condition.values)
+    target_group = get_target_group(condition.factors.get("post_topic", ""))
 
     system, user, prompt_hash = prompt_builder.comment(
         severity=severity.value,
         comment_id=comment_id,
         post_id=post.post_id,
-        topic=post.topic.value,
+        topic=post.topic,
         caption=post.caption,
         target_group=target_group,
     )

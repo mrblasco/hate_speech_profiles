@@ -9,21 +9,25 @@ before being returned.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
+import yaml
 from pydantic import ValidationError
 
 from src.llm_client import LLMClient
-from src.models import AgeGroup, Profile, Religion, CountryOfOrigin
+from src.models import Profile
 from src.prompts import PromptBuilder
 from src.sampling import Condition
 from src.utils.seeds import derive_seed
 
 log = logging.getLogger("pipeline.generators.profiles")
 
-# Age ranges by group (must match study_config.yaml)
+_CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs" / "study_config.yaml"
+with open(_CONFIG_PATH, encoding="utf-8") as _f:
+    _age_ranges_cfg = yaml.safe_load(_f)["design"].get("age_ranges", {})
+
 AGE_RANGES: dict[str, tuple[int, int]] = {
-    "adolescent":  (13, 17),
-    "young_adult": (18, 25),
+    k: (v["min"], v["max"]) for k, v in _age_ranges_cfg.items()
 }
 
 
@@ -39,34 +43,37 @@ async def generate_profile(
     Returns (profile, prompt_hash).
     Raises ValueError if schema validation fails after all retries.
     """
-    age_min, age_max = AGE_RANGES[condition.age_group]
+    f = condition.factors
+    age_group       = f.get("target_age_group", "young_adult")
+    gender          = f.get("target_gender", "")
+    religion        = f.get("target_religion", "")
+    country_of_origin = f.get("target_origin", "")
+    topic           = f.get("post_topic", "")
+
+    age_min, age_max = AGE_RANGES.get(age_group, (18, 25))
     seed = derive_seed(base_seed, "profile", condition.profile_id)
 
     system, user, prompt_hash = prompt_builder.profile(
         profile_id=condition.profile_id,
-        topic=condition.topic,
-        age_group=condition.age_group,
+        topic=topic,
+        age_group=age_group,
         age_min=age_min,
         age_max=age_max,
-        gender=condition.gender,
-        values=condition.values,
-        religion=condition.religion,
-        country_of_origin=condition.country_of_origin,
+        gender=gender,
+        religion=religion,
+        country_of_origin=country_of_origin,
     )
 
-    log.debug("Generating profile %s (topic=%s, %s/%s/%s)",
-              condition.profile_id, condition.topic,
-              condition.age_group, condition.gender, condition.values)
+    log.debug("Generating profile %s (topic=%s, %s/%s)",
+              condition.profile_id, topic, age_group, gender)
 
     raw = await client.complete_json(system, user, seed=seed)
 
-    # Ensure required fields that the LLM might omit
     raw.setdefault("profile_id",        condition.profile_id)
-    raw.setdefault("age_group",         condition.age_group)
-    raw.setdefault("gender",            condition.gender)
-    raw.setdefault("values",            condition.values)
-    raw.setdefault("religion",          condition.religion)
-    raw.setdefault("country_of_origin", condition.country_of_origin)
+    raw.setdefault("age_group",         age_group)
+    raw.setdefault("gender",            gender)
+    raw.setdefault("religion",          religion)
+    raw.setdefault("country_of_origin", country_of_origin)
 
     try:
         profile = Profile.model_validate(raw)
@@ -75,10 +82,9 @@ async def generate_profile(
             f"Profile schema validation failed for {condition.profile_id}: {exc}"
         ) from exc
 
-    log.info("  ✓ Profile %s  @%s  (%s, %s, %s)",
+    log.info("  ✓ Profile %s  @%s  (%s, %s)",
              profile.profile_id, profile.username,
-             profile.topic if hasattr(profile, "topic") else condition.topic,
-             profile.gender.value, profile.values.value)
+             profile.gender.value, profile.age_group.value)
 
     return profile, prompt_hash
 

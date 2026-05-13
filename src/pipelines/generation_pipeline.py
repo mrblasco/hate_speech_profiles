@@ -85,16 +85,18 @@ class GenerationConfig:
         self.concurrency         = gen.get("concurrency", 5)
         self.enable_cache        = gen.get("enable_cache", True)
 
-        design = study_cfg.get("design", {})
-        self.topics              = design.get("topics",              [])
-        self.age_groups          = design.get("age_groups",          [])
-        self.genders             = design.get("genders",             [])
-        self.values              = design.get("values",              [])
-        self.religions           = design.get("religions",           [])
-        self.countries_of_origin = design.get("countries_of_origin", [])
-        self.severities = [s.value for s in
-                           __import__("src.models", fromlist=["CommentSeverity"])
-                           .CommentSeverity]
+        design    = study_cfg.get("design", {})
+        enum_keys = study_cfg.get("enums",  {})
+
+        # comment_severities is a within-post manipulation, not a between-profile factor
+        _not_factors = {"comment_severities"}
+        self.design_factors: dict[str, list[str]] = {
+            key: design.get(key, [])
+            for key in enum_keys
+            if key not in _not_factors and isinstance(design.get(key), list)
+        }
+        self.comment_severities: list[str] = design.get("comment_severities", [])
+        self.age_ranges: dict               = design.get("age_ranges", {})
 
 
 async def run_pipeline(
@@ -148,12 +150,7 @@ async def run_pipeline(
     log.info("[Stage 1] Sampling experimental conditions …")
     conditions = build_design_matrix(
         n_profiles=cfg.n_profiles,
-        topics=cfg.topics,
-        age_groups=cfg.age_groups,
-        genders=cfg.genders,
-        values=cfg.values,
-        religions=cfg.religions,
-        countries_of_origin=cfg.countries_of_origin,
+        factors=cfg.design_factors,
         seed=cfg.seed,
     )
 
@@ -175,7 +172,7 @@ async def run_pipeline(
         from src.generators.html_profiles import generate_profile_pages
         from src.generators.html_stimuli import take_screenshots
         project_root = Path(__file__).resolve().parents[2]
-        profile_topic_pairs = [(p, c.topic) for p, c, _ in profile_results]
+        profile_topic_pairs = [(p, c.factors.get("post_topic", "")) for p, c, _ in profile_results]
         profile_html_paths = generate_profile_pages(
             profile_topic_pairs, cfg.output_dir / "final", project_root, cfg.seed
         )
@@ -315,11 +312,7 @@ async def run_pipeline(
         model_name=cfg.model,
         temperature=cfg.temperature,
         config_hash=config_hash,
-        topics=cfg.topics,
-        age_groups=cfg.age_groups,
-        genders=cfg.genders,
-        values=cfg.values,
-        severities=cfg.severities,
+        design_factors=cfg.design_factors,
         output_files={
             "csv":      str(csv_path),
             "jsonl":    str(jsonl_path),
@@ -379,7 +372,5 @@ def _empty_manifest(
         model_name=cfg.model,
         temperature=cfg.temperature,
         config_hash="",
-        topics=cfg.topics, age_groups=cfg.age_groups,
-        genders=cfg.genders, values=cfg.values,
-        severities=cfg.severities,
+        design_factors=cfg.design_factors,
     )

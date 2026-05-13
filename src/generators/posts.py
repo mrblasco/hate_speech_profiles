@@ -13,42 +13,22 @@ import logging
 from pydantic import ValidationError
 
 from src.llm_client import LLMClient
-from src.models import OriginalPost, Profile, Topic
+from src.models import OriginalPost, Profile
 from src.prompts import PromptBuilder
 from src.sampling import Condition
 from src.utils.seeds import derive_seed
 
 log = logging.getLogger("pipeline.generators.posts")
 
-# Maps topic enum values to human-readable labels used in prompts
-TOPIC_LABELS: dict[str, str] = {
-    "immigration":       "immigration and migration policy",
-    "feminism":          "feminism and gender equality",
-    "religion":          "religion and religious freedom",
-    "climate":           "climate change and environmental policy",
-    "public_health":     "public health policy and vaccines",
-    "national_identity": "national identity and patriotism",
-}
 
-# Maps topic + values to implied target group (used for comment generation)
-TARGET_GROUPS: dict[tuple[str, str], str] = {
-    ("immigration",       "progressive"):  "immigrants and refugees",
-    ("immigration",       "conservative"): "immigration critics",
-    ("feminism",          "progressive"):  "women and feminist activists",
-    ("feminism",          "conservative"): "traditionalist women and men",
-    ("religion",          "progressive"):  "religious minorities",
-    ("religion",          "conservative"): "secularists",
-    ("climate",           "progressive"):  "climate activists",
-    ("climate",           "conservative"): "climate-change sceptics",
-    ("public_health",     "progressive"):  "public health advocates",
-    ("public_health",     "conservative"): "vaccine sceptics",
-    ("national_identity", "progressive"):  "multicultural communities",
-    ("national_identity", "conservative"): "nationalists",
-}
-
-
-def get_target_group(topic: str, values: str) -> str:
-    return TARGET_GROUPS.get((topic, values), "the poster's community")
+def get_target_group(topic: str) -> str:
+    """Infer the implied target group from the topic stance."""
+    t = topic.lower()
+    if t.startswith("supports "):
+        return "supporters of " + topic[len("supports "):]
+    if t.startswith("opposes "):
+        return "critics of " + topic[len("opposes "):]
+    return "the poster's community"
 
 
 async def generate_post(
@@ -64,18 +44,17 @@ async def generate_post(
     Returns (post, prompt_hash).
     """
     post_id = f"{profile.profile_id}_POST{post_index:02d}"
-    seed = derive_seed(base_seed, "post", post_id)
-    topic_label = TOPIC_LABELS.get(condition.topic, condition.topic)
+    seed    = derive_seed(base_seed, "post", post_id)
+    topic   = condition.factors.get("post_topic", "")
 
     system, user, prompt_hash = prompt_builder.post(
         post_id=post_id,
         profile_id=profile.profile_id,
         username=profile.username,
-        age_group=condition.age_group,
-        gender=condition.gender,
-        values=condition.values,
+        age_group=condition.factors.get("target_age_group", ""),
+        gender=condition.factors.get("target_gender", ""),
         writing_style=profile.writing_style,
-        topic=topic_label,
+        topic=topic,
     )
 
     log.debug("Generating post %s", post_id)
@@ -83,12 +62,7 @@ async def generate_post(
 
     raw.setdefault("post_id",    post_id)
     raw.setdefault("profile_id", profile.profile_id)
-    raw.setdefault("topic",      condition.topic)
-
-    # Normalise topic string to enum value
-    topic_val = raw.get("topic", condition.topic)
-    if topic_val not in [t.value for t in Topic]:
-        raw["topic"] = condition.topic
+    raw.setdefault("topic",      topic)
 
     try:
         post = OriginalPost.model_validate(raw)

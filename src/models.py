@@ -10,54 +10,32 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
+import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-# ── Enumerations ──────────────────────────────────────────────────────────────
+# ── Config-driven enumerations ────────────────────────────────────────────────
+# Enums are built at import time from study_config.yaml so adding/removing
+# design values only requires editing the config, not this file.
 
-class Topic(str, Enum):
-    immigration      = "immigration"
-    feminism         = "feminism"
-    religion         = "religion"
-    climate          = "climate"
-    public_health    = "public_health"
-    national_identity = "national_identity"
+_CONFIG_PATH = Path(__file__).resolve().parent.parent / "configs" / "study_config.yaml"
 
-
-class AgeGroup(str, Enum):
-    adolescent  = "adolescent"
-    young_adult = "young_adult"
+with open(_CONFIG_PATH, encoding="utf-8") as _f:
+    _cfg    = yaml.safe_load(_f)
+    _design = _cfg["design"]
+    _enums  = _cfg.get("enums", {})   # key → EnumName, declared in study_config.yaml
 
 
-class Gender(str, Enum):
-    male      = "male"
-    female    = "female"
-    nonbinary = "nonbinary"
+def _str_enum(name: str, values: list[str]) -> type:
+    members = {v.lower().replace(" ", "_").replace("-", "_"): v for v in values}
+    return Enum(name, members, type=str)
 
 
-class Values(str, Enum):
-    progressive  = "progressive"
-    conservative = "conservative"
-
-
-class CommentSeverity(str, Enum):
-    opposing_opinion  = "opposing_opinion"
-    dehumanising      = "dehumanising"
-    inciting_violence = "inciting_violence"
-
-
-class Religion(str, Enum):
-    muslim    = "Muslim"
-    christian = "Christian"
-    jewish    = "Jewish"
-
-
-class CountryOfOrigin(str, Enum):
-    italy  = "Italy"
-    spain  = "Spain"
-    france = "France"
+for _key, _name in _enums.items():
+    globals()[_name] = _str_enum(_name, _design[_key])
 
 
 # ── Core domain models ────────────────────────────────────────────────────────
@@ -69,7 +47,7 @@ class Profile(BaseModel):
     age:               int = Field(ge=13, le=25)
     age_group:         AgeGroup
     gender:            Gender
-    values:            Values
+    values:            Optional[str]    = None   # not a controlled factor in current design
     religion:          Religion
     country_of_origin: CountryOfOrigin
     interests:         list[str] = Field(min_length=1, max_length=5)
@@ -93,7 +71,7 @@ class Profile(BaseModel):
 class OriginalPost(BaseModel):
     post_id:    str
     profile_id: str
-    topic:      Topic
+    topic:      str
     caption:    str
     hashtags:   list[str] = Field(default_factory=list)
     word_count: int = Field(ge=1)
@@ -176,7 +154,7 @@ class StimulusRow(BaseModel):
     age:               int
     age_group:         AgeGroup
     gender:            Gender
-    values:            Values
+    values:            Optional[str]              = None
     religion:          Optional[Religion]          = None
     country_of_origin: Optional[CountryOfOrigin]  = None
     writing_style:     str
@@ -184,7 +162,7 @@ class StimulusRow(BaseModel):
 
     # Post fields
     post_id:       str
-    topic:         Topic
+    topic:         str
     caption:       str
     hashtags:      str          # pipe-joined for CSV compatibility
     post_word_count: int
@@ -284,9 +262,5 @@ class RunManifest(BaseModel):
     model_name:        str
     temperature:       float
     config_hash:       str       # SHA-256 of study_config.yaml at run time
-    topics:            list[str]
-    age_groups:        list[str]
-    genders:           list[str]
-    values:            list[str]
-    severities:        list[str]
+    design_factors:    dict[str, list[str]]
     output_files:      dict[str, str] = Field(default_factory=dict)

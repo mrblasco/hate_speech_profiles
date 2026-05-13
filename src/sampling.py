@@ -21,93 +21,53 @@ log = logging.getLogger("pipeline.sampling")
 
 @dataclass
 class Condition:
-    profile_id:        str
-    topic:             str
-    age_group:         str
-    gender:            str
-    values:            str
-    religion:          str
-    country_of_origin: str
+    profile_id: str
+    factors:    dict[str, str]   # design key → sampled value
 
 
 def build_design_matrix(
     n_profiles: int,
-    topics: list[str],
-    age_groups: list[str],
-    genders: list[str],
-    values: list[str],
-    religions: list[str],
-    countries_of_origin: list[str],
+    factors: dict[str, list[str]],
     seed: int,
 ) -> list[Condition]:
     """
-    Create a balanced list of Condition objects.
+    Create a balanced list of Condition objects from an arbitrary factors dict.
 
-    Strategy
-    --------
-    All combinations of (topic, age_group, gender, values, religion,
-    country_of_origin) are enumerated, tiled to reach at least n_profiles
-    rows, then shuffled deterministically. The first n_profiles rows are
-    returned.
-
-    This guarantees:
-      • All factor combinations appear.
-      • Marginal distributions are as balanced as possible.
-      • The design is fully reproducible from (n_profiles, seed).
+    All factor-level combinations are enumerated, tiled to n_profiles, then
+    shuffled deterministically. This guarantees full coverage of all cells and
+    reproducibility from (n_profiles, seed).
     """
     rng = make_rng(seed)
-    combos = list(itertools.product(
-        topics, age_groups, genders, values, religions, countries_of_origin
-    ))
+    keys   = list(factors.keys())
+    combos = list(itertools.product(*factors.values()))
     n_combos = len(combos)
 
     log.info(
-        "Design: %d topics × %d age_groups × %d genders × %d values"
-        " × %d religions × %d countries = %d combos",
-        len(topics), len(age_groups), len(genders), len(values),
-        len(religions), len(countries_of_origin), n_combos,
+        "Design: %s = %d combos",
+        " × ".join(f"{k}({len(factors[k])})" for k in keys),
+        n_combos,
     )
 
     n_reps = math.ceil(n_profiles / n_combos)
     pool = (combos * n_reps)[:n_profiles]
     shuffled = rng.sample(pool, len(pool))
 
-    conditions: list[Condition] = []
-    for idx, (topic, age_group, gender, values_, religion, country_of_origin) in enumerate(shuffled):
-        profile_id = f"P{idx + 1:04d}"
-        conditions.append(Condition(
-            profile_id=profile_id,
-            topic=topic,
-            age_group=age_group,
-            gender=gender,
-            values=values_,
-            religion=religion,
-            country_of_origin=country_of_origin,
-        ))
+    conditions: list[Condition] = [
+        Condition(profile_id=f"P{idx + 1:04d}", factors=dict(zip(keys, vals)))
+        for idx, vals in enumerate(shuffled)
+    ]
 
-    _log_balance(conditions, topics, age_groups, genders, values, religions, countries_of_origin)
+    _log_balance(conditions, factors)
     return conditions
 
 
 def _log_balance(
     conditions: list[Condition],
-    topics: list[str],
-    age_groups: list[str],
-    genders: list[str],
-    values: list[str],
-    religions: list[str],
-    countries_of_origin: list[str],
+    factors: dict[str, list[str]],
 ) -> None:
     from collections import Counter
     n = len(conditions)
-    for attr, levels in [
-        ("topic",             topics),
-        ("age_group",         age_groups),
-        ("gender",            genders),
-        ("values",            values),
-        ("religion",          religions),
-        ("country_of_origin", countries_of_origin),
-    ]:
-        counts = Counter(getattr(c, attr) for c in conditions)
+    for key, levels in factors.items():
+        counts = Counter(c.factors[key] for c in conditions)
         counts_str = "  ".join(f"{lv}={counts[lv]}" for lv in levels)
-        log.info("  %-18s  %s  (n=%d)", attr, counts_str, n)
+        log.info("  %-22s  %s  (n=%d)", key, counts_str, n)

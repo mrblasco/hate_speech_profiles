@@ -5,34 +5,76 @@ study:
   name: "hate_speech_escalation_vignettes"
   version: "1.0.0"
 
+# Maps design list keys → Python Enum class names.
+# Add an entry here whenever you add a new list dimension under design:.
+enums:
+  respondent_country:   RespondentCountry
+  target_age_group:     AgeGroup
+  target_gender:        Gender
+  target_religion:      Religion
+  target_origin:        CountryOfOrigin
+  post_topic:           PostTopic
+  post_engagement:      PostEngagement
+  comment_severities:   CommentSeverity
+  comment_anonymity:    CommentAnonymity
+
 design:
-  topics:
-    - immigration
-    - feminism
-    - religion
-    - climate
-    - public_health
-    - national_identity
+  respondent_country:
+    - Italy
+    - Germany
+    - France
+    - Belgium
+    - Spain
 
-  age_groups:
-    - adolescent     # 13–17
-    - young_adult    # 18–25
+  post_topic:
+    # Migration & integration
+    - supports expanded refugee resettlement
+    - opposes expanded refugee resettlement
 
-  genders:
+    - supports stricter EU external border controls
+    - opposes stricter EU external border controls
+
+    - supports multicultural integration policies
+    - opposes multicultural integration policies
+
+    # Gender & equality
+    - supports gender quotas in corporate leadership
+    - opposes gender quotas in corporate leadership
+
+    - supports stronger transgender rights protections
+    - opposes stronger transgender rights protections
+
+    # National identity & sovereignty
+    - supports stronger national identity policies
+    - opposes stronger national identity policies
+
+    - supports prioritising national sovereignty over EU integration
+    - opposes prioritising national sovereignty over EU integration
+
+    # Climate & economy
+    - supports ambitious climate transition policies
+    - opposes ambitious climate transition policies
+
+    - supports reducing agricultural environmental regulations
+    - opposes reducing agricultural environmental regulations
+
+  post_engagement:
+    - high
+    - low
+
+  target_age_group:
+    - young_adult   # 18–25
+
+  target_gender:
     - male
     - female
-    - nonbinary
 
-  values:
-    - progressive
-    - conservative
-
-  religions:
+  target_religion:
     - Muslim
     - Christian
     - Jewish
 
-  countries_of_origin:
+  target_origin:
     - Italy
     - Spain
     - France
@@ -41,6 +83,11 @@ design:
     - opposing_opinion
     - dehumanising
     - inciting_violence
+  
+  comment_anonymity:
+    - Anonymous
+    - Not-anonymous
+
 
   # Age ranges per group
   age_ranges:
