@@ -284,6 +284,25 @@ body {
     display: block;
 }
 
+/* ── Comment Highlight Callout ─────────────────────────────── */
+.comment-highlight {
+    margin: 6px -14px 2px;
+    padding: 8px 14px 10px;
+    border-left: 4px solid #f9a825;
+    background: #fffde7;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.comment-highlight-arrow {
+    font-size: 11px;
+    color: #f9a825;
+    flex-shrink: 0;
+    margin-top: 3px;
+    line-height: 1;
+}
+
 /* ── Hate Comment ──────────────────────────────────────────── */
 .post-comment {
     font-size: 14px;

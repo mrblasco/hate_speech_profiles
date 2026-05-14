@@ -44,11 +44,12 @@ async def generate_profile(
     Raises ValueError if schema validation fails after all retries.
     """
     f = condition.factors
-    age_group       = f.get("target_age_group", "young_adult")
-    gender          = f.get("target_gender", "")
-    religion        = f.get("target_religion", "")
+    age_group         = f.get("target_age_group", "young_adult")
+    gender            = f.get("target_gender", "")
+    religion          = f.get("target_religion", "")
     country_of_origin = f.get("target_origin", "")
-    topic           = f.get("post_topic", "")
+    topic             = f.get("post_topic", "")
+    values            = "progressive" if topic.startswith("supports") else "conservative"
 
     age_min, age_max = AGE_RANGES.get(age_group, (18, 25))
     seed = derive_seed(base_seed, "profile", condition.profile_id)
@@ -60,6 +61,7 @@ async def generate_profile(
         age_min=age_min,
         age_max=age_max,
         gender=gender,
+        values=values,
         religion=religion,
         country_of_origin=country_of_origin,
     )

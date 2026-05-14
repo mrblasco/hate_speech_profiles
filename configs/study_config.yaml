@@ -18,6 +18,14 @@ enums:
   comment_severities:   CommentSeverity
   comment_anonymity:    CommentAnonymity
 
+# Factors crossed at HTML render time (not in the profile design matrix).
+# comment_severities drives LLM generation (already produces one StimulusRow per level).
+# These two are pure display manipulations crossed over each StimulusRow:
+#   3 severities × 2 anonymity × 2 engagement = 12 HTML files per topic.
+stimulus_factors:
+  - comment_anonymity
+  - post_engagement
+
 design:
   respondent_country:
     - Italy

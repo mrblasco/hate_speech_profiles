@@ -46,6 +46,7 @@ async def generate_post(
     post_id = f"{profile.profile_id}_POST{post_index:02d}"
     seed    = derive_seed(base_seed, "post", post_id)
     topic   = condition.factors.get("post_topic", "")
+    values  = "progressive" if topic.startswith("supports") else "conservative"
 
     system, user, prompt_hash = prompt_builder.post(
         post_id=post_id,
@@ -53,8 +54,10 @@ async def generate_post(
         username=profile.username,
         age_group=condition.factors.get("target_age_group", ""),
         gender=condition.factors.get("target_gender", ""),
+        values=values,
         writing_style=profile.writing_style,
         topic=topic,
+        respondent_country=condition.factors.get("respondent_country", ""),
     )
 
     log.debug("Generating post %s", post_id)

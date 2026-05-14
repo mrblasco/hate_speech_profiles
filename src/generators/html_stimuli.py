@@ -13,13 +13,32 @@ visual output is fully reproducible.
 from __future__ import annotations
 
 import asyncio
+import itertools
 from pathlib import Path
 
+import yaml
 from jinja2 import Environment, FileSystemLoader
 
 from src.models import StimulusRow
 from src.utils.logging_utils import get_logger
 from src.utils.seeds import derive_seed
+
+# ── Load stimulus factors from config ─────────────────────────────────────────
+_CONFIG_PATH = Path(__file__).resolve().parents[2] / "configs" / "study_config.yaml"
+with open(_CONFIG_PATH, encoding="utf-8") as _f:
+    _cfg_data = yaml.safe_load(_f)
+    _design   = _cfg_data["design"]
+
+STIMULUS_FACTORS: dict[str, list[str]] = {
+    k: _design.get(k, [])
+    for k in _cfg_data.get("stimulus_factors", [])
+}
+
+# Likes and comment counts per engagement level (used when post_engagement is a factor)
+ENGAGEMENT_COUNTS: dict[str, tuple[int, int]] = {
+    "low":  (15, 3),
+    "high": (4821, 187),
+}
 
 log = get_logger("generators.html")
 
@@ -49,14 +68,16 @@ TOPIC_EMOJIS: dict[str, str] = {
     "national_identity": "🏴",
 }
 
+ANONYMOUS_USERNAME = "anonymous_user"
+
 COMMENTER_USERNAMES = [
-    "user48291",       "real_talk_99",    "truth_seeker_x",  "anonymous_voice",
-    "just_sayin_2024", "no_filter_guy",   "freedom_speaker", "real_deal_22",
-    "speaking_facts_", "open_minded_99",  "debate_this_now", "commentator45",
-    "plaintruth2024",  "honest_guy_12",   "voice_of_reason", "citizen_free",
-    "noreservations_", "outsider_view",   "justmyopinion99", "the_watchman_x",
-    "critical_thinker","questioning_all", "skeptic_online",  "frank_comments",
-    "telling_it_real", "common_sense_01", "facts_not_feels", "reality_check_",
+    "marco.rossi91",    "giulia.ferrari",   "luca.bianchi",    "sofia.esposito",
+    "matteo.romano",    "francesca.ricci",  "andrea.conti",    "elena.colombo",
+    "davide.greco",     "chiara.marino",    "simone.bruno",    "valentina.gallo",
+    "federico.costa",   "alessia.fontana",  "giacomo.moretti", "sara.barbieri",
+    "lorenzo.riva",     "martina.silvestri","emanuele.caruso", "laura.ferretti",
+    "thomas.mueller",   "anna.schmidt",     "pierre.dubois",   "marie.lefevre",
+    "carlos.garcia",    "isabelle.martin",  "jan.kowalski",    "katarzyna.nowak",
 ]
 
 POST_AGES = [
@@ -64,20 +85,6 @@ POST_AGES = [
     "5 HOURS AGO", "6 HOURS AGO", "8 HOURS AGO",
 ]
 
-# All 9 engagement rows from data/engagement.csv.
-# Each stimulus is rendered once per row → 9 HTML files per stimulus.
-# Tuple layout: (engagement_level, variant_index_within_level, likes, comments_count)
-ENGAGEMENT_ROWS: list[tuple[str, int, int, int]] = [
-    ("low",    1,  12,   2),
-    ("low",    2,  8,    3),
-    ("low",    3,  21,   4),
-    ("medium", 1,  187,  18),
-    ("medium", 2,  234,  24),
-    ("medium", 3,  312,  31),
-    ("high",   1,  2934, 156),
-    ("high",   2,  3847, 203),
-    ("high",   3,  5123, 189),
-]
 
 _FALLBACK_GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
 
@@ -98,11 +105,15 @@ def _avatar_initials(display_name: str) -> str:
 
 # ── Context builder ───────────────────────────────────────────────────────────
 
-def _row_decoration(row: StimulusRow, base_seed: int) -> tuple[str, str, str]:
-    """Return (avatar_colour, commenter_username, post_age) — stable across engagement variants."""
-    avatar_colour      = _pick(AVATAR_COLOURS,        derive_seed(base_seed, "avatar",    row.profile_id))
-    commenter_username = _pick(COMMENTER_USERNAMES,   derive_seed(base_seed, "commenter", row.comment_id))
-    post_age           = _pick(POST_AGES,              derive_seed(base_seed, "age",       row.stimulus_id))
+def _row_decoration(row: StimulusRow, base_seed: int, anonymous: bool = False) -> tuple[str, str, str]:
+    """Return (avatar_colour, commenter_username, post_age) — stable across display variants."""
+    avatar_colour = _pick(AVATAR_COLOURS, derive_seed(base_seed, "avatar", row.profile_id))
+    post_age      = _pick(POST_AGES,      derive_seed(base_seed, "age",    row.stimulus_id))
+    if anonymous:
+        anon_num = derive_seed(base_seed, "anon_id", row.comment_id) % 90000 + 10000
+        commenter_username = f"user_{anon_num}"
+    else:
+        commenter_username = _pick(COMMENTER_USERNAMES, derive_seed(base_seed, "commenter", row.comment_id))
     return avatar_colour, commenter_username, post_age
 
 
@@ -115,7 +126,7 @@ def build_context(
     likes: int,
     comments_count: int,
 ) -> dict:
-    topic = row.topic.value
+    topic = row.topic
 
     n = f"{comments_count:,}"
     likes_fmt = f"{likes:,}"
@@ -157,23 +168,18 @@ def generate_html_stimuli(
     base_seed: int,
 ) -> list[Path]:
     """
-    Render 9 HTML files per StimulusRow — one per engagement row.
+    Render one HTML file per StimulusRow × stimulus factor combination.
 
-    Filename pattern: {stimulus_id}_{engagement_level}{variant_index}.html
-    e.g. P0001_POST00_opposing_opinion_low1.html
+    With the default 3×2×2 design:
+      - 3 StimulusRows per post  (one per comment severity, from generation)
+      - × 2 anonymity levels     (stimulus_factors: comment_anonymity)
+      - × 2 engagement levels    (stimulus_factors: post_engagement)
+      = 12 HTML files per topic
+
+    Filename: {stimulus_id}_{factor_value_slugs}.html
+    e.g. P0001_POST00_OPP00_anonymous_low.html
 
     CSS is embedded inline so each file is self-contained for Playwright.
-
-    Parameters
-    ----------
-    rows:         Passed StimulusRow objects (from final stimuli).
-    output_dir:   Parent of the html/ subdirectory (e.g. outputs/run_001/final).
-    project_root: Repo root; templates/ and static/ are resolved from here.
-    base_seed:    Master run seed for deterministic decoration.
-
-    Returns
-    -------
-    List of all written HTML file paths (len = len(rows) × 9).
     """
     css_path = project_root / "static" / "style.css"
     if not css_path.exists():
@@ -189,14 +195,31 @@ def generate_html_stimuli(
     html_dir = output_dir / "html"
     html_dir.mkdir(parents=True, exist_ok=True)
 
+    # Build all display variants from the crossed stimulus factors
+    factor_names  = list(STIMULUS_FACTORS.keys())
+    factor_values = list(STIMULUS_FACTORS.values())
+    display_variants = list(itertools.product(*factor_values)) if factor_values else [()]
+
     html_paths: list[Path] = []
     for row in rows:
-        avatar_colour, commenter_username, post_age = _row_decoration(row, base_seed)
-        for level, variant_idx, likes, comments_count in ENGAGEMENT_ROWS:
+        for variant in display_variants:
+            variant_map = dict(zip(factor_names, variant))
+
+            # Resolve anonymity
+            anonymity = variant_map.get("comment_anonymity", "Not-anonymous")
+            anonymous = anonymity.lower().startswith("anon")
+
+            # Resolve engagement counts
+            engagement = variant_map.get("post_engagement", "high").lower()
+            likes, comments_count = ENGAGEMENT_COUNTS.get(engagement, ENGAGEMENT_COUNTS["high"])
+
+            avatar_colour, commenter_username, post_age = _row_decoration(row, base_seed, anonymous)
             context = build_context(
                 row, css, avatar_colour, commenter_username, post_age, likes, comments_count
             )
-            fname = f"{row.stimulus_id}_{level}{variant_idx}.html"
+
+            slug  = "_".join(v.lower().replace(" ", "_").replace("-", "_") for v in variant)
+            fname = f"{row.stimulus_id}_{slug}.html" if slug else f"{row.stimulus_id}.html"
             html_path = html_dir / fname
             html_path.write_text(template.render(**context), encoding="utf-8")
             html_paths.append(html_path)

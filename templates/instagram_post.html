@@ -17,6 +17,7 @@
     </style>
 </head>
 <body>
+
 <div class="ig-wrapper">
 
     <!-- ── Status Bar ─────────────────────────────────────── -->
@@ -143,10 +144,13 @@
         {% endif %}
 
         <!-- Hateful comment (the experimental stimulus) -->
-        <p class="post-comment">
-            <span class="comment-author">{{ commenter_username }}</span>
-            <span class="comment-text">{{ comment_text }}</span>
-        </p>
+        <div class="comment-highlight">
+            <span class="comment-highlight-arrow">▶</span>
+            <p class="post-comment">
+                <span class="comment-author">{{ commenter_username }}</span>
+                <span class="comment-text">{{ comment_text }}</span>
+            </p>
+        </div>
 
         <p class="post-timestamp">{{ post_age }}</p>
     </div>

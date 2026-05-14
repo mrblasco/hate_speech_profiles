@@ -35,11 +35,13 @@ async def check_post_realism(
     """
     seed = derive_seed(base_seed, "realism", post.post_id)
 
+    topic  = post.topic
+    values = "progressive" if topic.startswith("supports") else "conservative"
     system, user, _ = prompt_builder.realism_check(
-        age_group=condition.age_group,
-        gender=condition.gender,
-        values=condition.values,
-        topic=post.topic.value,
+        age_group=condition.factors.get("target_age_group", ""),
+        gender=condition.factors.get("target_gender", ""),
+        values=values,
+        topic=topic,
         caption=post.caption,
     )
 

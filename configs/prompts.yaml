@@ -54,12 +54,11 @@ post_generation:
     - username: {username}
     - age_group: {age_group}
     - gender: {gender}
-    - values: {values}
     - writing_style: {writing_style}
     - topic: {topic}
 
     STRICT RULES:
-    1. The caption MUST express an opinion on the topic from a {values} perspective.
+    1. The caption MUST express an opinion on the topic from the profile's perspective.
     2. It MAY be polarizing or politically charged.
     3. It MUST NEVER contain hate speech, slurs, or calls to violence.
     4. It must be 15–40 words (caption text only, excluding hashtags).
@@ -67,7 +66,8 @@ post_generation:
     6. Match the writing_style: {writing_style}.
     7. Sound like a real Instagram post from a {age_group} ({gender}).
     8. Do NOT start with "I think" or "In my opinion".
-
+    9. The caption should feel culturally and contextually plausible for someone viewing it in {respondent_country}.
+    
     Return ONLY this JSON object (no markdown, no explanation):
     {{
       "post_id": "{post_id}",
@@ -90,7 +90,7 @@ comment_opposing_opinion:
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
+    Identify the target group implied by the post.
 
     SEVERITY LEVEL 1 — OPPOSING OPINION:
     - Express strong disagreement or a contrasting viewpoint.
@@ -123,8 +123,8 @@ comment_dehumanising:
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
-
+    Identify the target group implied by the post.
+    
     SEVERITY LEVEL 2 — DEHUMANISING:
     - Attacks the poster's GROUP IDENTITY, not just the idea.
     - Uses othering language ("those people", "they always"), stereotypes,
@@ -156,7 +156,7 @@ comment_inciting_violence:
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
+    Identify the target group implied by the post.
 
     SEVERITY LEVEL 3 — INCITING VIOLENCE:
     - Moves beyond dehumanisation to explicit threat, call-to-action,

@@ -22,11 +22,7 @@ from src.utils.seeds import derive_seed
 
 log = logging.getLogger("pipeline.validators.severity")
 
-_SEVERITY_TO_SCORE = {
-    CommentSeverity.opposing_opinion:  1,
-    CommentSeverity.dehumanising:      2,
-    CommentSeverity.inciting_violence: 3,
-}
+_SEVERITY_TO_SCORE = {m: i + 1 for i, m in enumerate(CommentSeverity)}
 
 
 async def judge_severity(
@@ -44,7 +40,7 @@ async def judge_severity(
 
     system, user, _ = prompt_builder.severity_judge(
         text=comment.text,
-        topic=post.topic.value,
+        topic=post.topic,
     )
 
     raw = await client.complete_json(system, user, seed=seed)
@@ -64,7 +60,7 @@ async def judge_severity(
         # Return a low-confidence judgement rather than crashing the pipeline
         return SeverityJudgement(
             severity_score=raw.get("severity_score", 1),
-            severity_label=CommentSeverity.opposing_opinion,
+            severity_label=next(iter(CommentSeverity)),
             confidence=0.0,
             reasoning="parse error",
         )

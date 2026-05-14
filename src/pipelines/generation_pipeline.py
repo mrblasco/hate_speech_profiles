@@ -88,15 +88,20 @@ class GenerationConfig:
         design    = study_cfg.get("design", {})
         enum_keys = study_cfg.get("enums",  {})
 
-        # comment_severities is a within-post manipulation, not a between-profile factor
-        _not_factors = {"comment_severities"}
+        # comment_severities drives LLM generation; stimulus_factors are display-only.
+        # Neither belongs in the between-profile design matrix.
+        _stimulus_keys = set(study_cfg.get("stimulus_factors", []))
+        _not_factors   = {"comment_severities"} | _stimulus_keys
         self.design_factors: dict[str, list[str]] = {
             key: design.get(key, [])
             for key in enum_keys
             if key not in _not_factors and isinstance(design.get(key), list)
         }
-        self.comment_severities: list[str] = design.get("comment_severities", [])
-        self.age_ranges: dict               = design.get("age_ranges", {})
+        self.comment_severities: list[str]        = design.get("comment_severities", [])
+        self.stimulus_factors:   dict[str, list[str]] = {
+            k: design.get(k, []) for k in _stimulus_keys
+        }
+        self.age_ranges: dict = design.get("age_ranges", {})
 
 
 async def run_pipeline(
