@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from src.llm_client import LLMClient
 from src.models import OriginalPost, Profile, Topic
+from src.policies import PolicyCondition
 from src.prompts import PromptBuilder
 from src.sampling import Condition
 from src.utils.seeds import derive_seed
@@ -67,16 +68,30 @@ async def generate_post(
     seed = derive_seed(base_seed, "post", post_id)
     topic_label = TOPIC_LABELS.get(condition.topic, condition.topic)
 
-    system, user, prompt_hash = prompt_builder.post(
-        post_id=post_id,
-        profile_id=profile.profile_id,
-        username=profile.username,
-        age_group=condition.age_group,
-        gender=condition.gender,
-        values=condition.values,
-        writing_style=profile.writing_style,
-        topic=topic_label,
-    )
+    if isinstance(condition, PolicyCondition) and condition.post_stance:
+        system, user, prompt_hash = prompt_builder.build(
+            "post_generation_policy",
+            post_id=post_id,
+            profile_id=profile.profile_id,
+            username=profile.username,
+            age_group=condition.age_group,
+            gender=condition.gender,
+            values=condition.values,
+            writing_style=profile.writing_style,
+            topic=topic_label,
+            post_stance=condition.post_stance,
+        )
+    else:
+        system, user, prompt_hash = prompt_builder.post(
+            post_id=post_id,
+            profile_id=profile.profile_id,
+            username=profile.username,
+            age_group=condition.age_group,
+            gender=condition.gender,
+            values=condition.values,
+            writing_style=profile.writing_style,
+            topic=topic_label,
+        )
 
     log.debug("Generating post %s", post_id)
     raw = await client.complete_json(system, user, seed=seed)

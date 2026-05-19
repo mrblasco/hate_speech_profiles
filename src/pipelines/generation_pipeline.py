@@ -36,6 +36,7 @@ from src.models import (
 )
 from src.prompts import PromptBuilder
 from src.sampling import Condition, build_design_matrix
+from src.policies import PolicyCondition
 from src.validators.realism import check_realism_batch
 from src.validators.schema import SchemaValidator
 from src.validators.severity import judge_comments_batch
@@ -63,6 +64,7 @@ class GenerationConfig:
         dry_run: bool = False,
         generate_html: bool = False,
         screenshots: bool = False,
+        policies_cfg: dict | None = None,
     ) -> None:
         self.study_cfg           = study_cfg
         self.n_profiles          = n_profiles
@@ -75,6 +77,7 @@ class GenerationConfig:
         self.dry_run             = dry_run
         self.generate_html       = generate_html
         self.screenshots         = screenshots
+        self.policies_cfg        = policies_cfg
 
         gen = study_cfg.get("generation", {})
         self.temperature         = gen.get("temperature", 0.9)
@@ -144,18 +147,33 @@ async def run_pipeline(
     prompt_builder = PromptBuilder(configs_dir / "prompts.yaml")
     schema_validator = SchemaValidator(configs_dir / "generation_rules.yaml")
 
-    # ── Stage 1: Design matrix ────────────────────────────────────────────────
-    log.info("[Stage 1] Sampling experimental conditions …")
-    conditions = build_design_matrix(
-        n_profiles=cfg.n_profiles,
-        topics=cfg.topics,
-        age_groups=cfg.age_groups,
-        genders=cfg.genders,
-        values=cfg.values,
-        religions=cfg.religions,
-        countries_of_origin=cfg.countries_of_origin,
-        seed=cfg.seed,
-    )
+    # ── Stage 1: Design matrix or policy conditions ───────────────────────────
+    if cfg.policies_cfg:
+        from src.policies import build_policy_conditions, load_policies
+        log.info("[Stage 1] Policy mode: building conditions from policies.yaml …")
+        policies = [p for p in cfg.policies_cfg.get("policies", [])
+                    if p.get("enabled", True)]
+        conditions = build_policy_conditions(
+            policies=policies,
+            age_groups=cfg.age_groups,
+            genders=cfg.genders,
+            religions=cfg.religions,
+            countries_of_origin=cfg.countries_of_origin,
+            n_profiles=cfg.n_profiles,
+            seed=cfg.seed,
+        )
+    else:
+        log.info("[Stage 1] Sampling experimental conditions …")
+        conditions = build_design_matrix(
+            n_profiles=cfg.n_profiles,
+            topics=cfg.topics,
+            age_groups=cfg.age_groups,
+            genders=cfg.genders,
+            values=cfg.values,
+            religions=cfg.religions,
+            countries_of_origin=cfg.countries_of_origin,
+            seed=cfg.seed,
+        )
 
     if cfg.dry_run:
         log.info("[dry-run] Would generate %d profiles. Exiting.", len(conditions))
@@ -280,6 +298,9 @@ async def run_pipeline(
             judge=judge,
             realism=realism,
             passed=passed,
+            policy_id=cond.policy_id if isinstance(cond, PolicyCondition) else None,
+            post_stance=cond.post_stance if isinstance(cond, PolicyCondition) else None,
+            opposing_stance=cond.opposing_stance if isinstance(cond, PolicyCondition) else None,
         )
         stimulus_rows.append(row)
 

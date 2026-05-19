@@ -14,28 +14,27 @@ design:
     - public_health
     - national_identity
 
+  values:
+    - progressive
+    - conservative
+
   age_groups:
-    - adolescent     # 13–17
+    #- adolescent     # 13–17
     - young_adult    # 18–25
 
   genders:
     - male
     - female
-    - nonbinary
-
-  values:
-    - progressive
-    - conservative
 
   religions:
-    - Muslim
     - Christian
-    - Jewish
 
   countries_of_origin:
+    - Belgium
     - Italy
-    - Spain
     - France
+    - Germany
+    - Spain
 
   comment_severities:
     - opposing_opinion

@@ -118,6 +118,24 @@ inspect:                          ## Build respondent inspector  → output/insp
 verify:                           ## Check factorial balance of the design
 	$(PY) scripts/verify_balance.py
 
+view-posts:                       ## Extract post topics + captions to CSV, open in Excel	
+	jq  -r '.[] | [.topic, .caption] | @csv' $(OUTDIR)/raw/posts.json | sort > _posts.csv && open _posts.csv
+
+view-comments:                       ## Extract post topics + captions to CSV, open in Excel	
+	jq  -r '.[] | [.target_group, .severity, .toxicity_estimate, .text] | @csv' $(OUTDIR)/raw/comments.json | sort > _comments.csv && open _comments.csv
+
+
+# ── Policies ───────────────────────────────────────────────────────────────
+
+
+policies: 
+	$(PY) src/main.py \
+	--policies configs/policies.yaml \
+	--n_profiles 28 --seed 42 \
+	--output_dir outputs/run_006 \
+	--model gpt-4o
+
+
 # ── Housekeeping ───────────────────────────────────────────────────────────────
 
 .PHONY: clean

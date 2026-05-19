@@ -117,6 +117,13 @@ def parse_args() -> argparse.Namespace:
         "--config", type=Path, default=CONFIGS_DIR / "study_config.yaml",
         help="Path to study_config.yaml. Default: configs/study_config.yaml.",
     )
+    parser.add_argument(
+        "--policies", type=Path, default=None, metavar="PATH",
+        help="Path to policies.yaml. Activates policy mode: each policy defines "
+             "the exact post stance and the opposing stance for hate-speech comments. "
+             "Replaces the standard topic×values design matrix. "
+             "Example: configs/policies.yaml",
+    )
     return parser.parse_args()
 
 
@@ -206,6 +213,10 @@ async def main() -> None:
             sys.exit(1)
 
     study_cfg = load_yaml(args.config)
+    policies_cfg = load_yaml(args.policies) if args.policies else None
+    if policies_cfg:
+        log.info("Policy mode: loaded %d policies from %s",
+                 len(policies_cfg.get("policies", [])), args.policies)
 
     cfg = GenerationConfig(
         study_cfg=study_cfg,
@@ -219,6 +230,7 @@ async def main() -> None:
         dry_run=args.dry_run,
         generate_html=args.html or args.screenshots,
         screenshots=args.screenshots,
+        policies_cfg=policies_cfg,
     )
 
     manifest = await run_pipeline(cfg, configs_dir=CONFIGS_DIR)

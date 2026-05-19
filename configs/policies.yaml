@@ -1,0 +1,158 @@
+## Policy-mode configuration for the vignette generator.
+##
+## Each policy defines the exact stance the post will express and the
+## opposing stance that hate-speech comments will attack at all 3 severity
+## levels. Researcher only needs to edit this file — no Python changes needed.
+##
+## Required fields:
+##   id              — unique snake_case identifier (used in output CSV + filenames)
+##   topic           — must match a value in study_config.yaml design.topics
+##   post_stance     — exact claim the post must express (5–15 words)
+##   opposing_stance — the position hate-speech comments will argue for (5–15 words)
+##   values          — progressive | conservative (drives profile persona generation)
+##
+## Optional fields:
+##   target_group    — overrides the automatic TARGET_GROUPS lookup in posts.py
+##   enabled         — set to false to skip without deleting the entry (default: true)
+
+policies:
+
+  # -----------------------------------------------
+  # ---- Feminism-related policies --------------
+  # -----------------------------------------------
+
+  - id: corporate_gender_quotas_support
+    topic: feminism
+    post_stance: "support mandatory gender quotas in corporate boardrooms, political parties, or public offices"
+    opposing_stance: "oppose mandatory gender quotas in corporate boardrooms, political parties, or public offices"
+    target_group: "women"
+    values: progressive
+    enabled: true
+
+  - id: corporate_gender_quotas_oppose
+    topic: feminism
+    post_stance: "oppose mandatory gender quotas in corporate boardrooms, political parties, or public offices"
+    opposing_stance: "support mandatory gender quotas in corporate boardrooms, political parties, or public offices"
+    target_group: "women"
+    values: conservative
+    enabled: true
+
+  # -----------------------------------------------
+  # Climate-related policies 
+  # -----------------------------------------------
+
+  - id: climate_action_support
+    topic: climate
+    post_stance: "support policies mitgating climate change"
+    opposing_stance: "oppose policies mitgating climate change, arguing these policies stifle the economy and increase inequality"
+    target_group: "environmentalists"
+    values: progressive
+    enabled: true
+
+  - id: climate_action_oppose
+    topic: climate
+    post_stance: "oppose policies mitgating climate change, arguing these policies stifle the economy and increase inequality"
+    opposing_stance: "support policies mitgating climate change"
+    target_group: "environmentalists"
+    values: conservative
+    enabled: true
+
+  # -----------------------------------------------
+  # Religion-related policies 
+  # -----------------------------------------------
+
+  - id: migrant_welfare_support
+    topic: immigration
+    post_stance: "support an equal access to national welfare system to migrants and refugees"
+    opposing_stance: "oppose an equal access to national welfare system to migrants and refugees"
+    target_group: "religious minorities, especially Muslim and Jewish communities"
+    values: conservative
+    enabled: true
+
+  - id: migrant_welfare_oppose
+    topic: immigration
+    post_stance: "oppose an equal access to national welfare system to migrants and refugees"
+    opposing_stance: "support an equal access to national welfare system to migrants and refugees"
+    target_group: "religious minorities, especially Muslim and Jewish communities"
+    values: conservative
+    enabled: true
+
+  # -----------------------------------------------
+  # Racism  policies 
+  # -----------------------------------------------
+
+  - id: anti_racism_support  
+    topic: racism  
+    post_stance: "support policies that actively combat racial discrimination"  
+    opposing_stance: "oppose policies that actively combat racial discrimination, arguing they constitute reverse discrimination and undermine merit‑based systems"  
+    target_group: "immigrant or racialised minorities"  
+    values: progressive  
+    enabled: true  
+
+  - id: anti_racism_oppose  
+    topic: racism  
+    post_stance: "oppose policies that actively combat racial discrimination, arguing they constitute reverse discrimination and undermine merit‑based systems"  
+    opposing_stance: "support policies that actively combat racial discrimination"  
+    target_group: "immigrant or racialised minorities"  
+    values: conservative  
+    enabled: true 
+
+  # -----------------------------------------------
+  # Racism  policies 
+  # -----------------------------------------------
+
+  - id: anti_hate_religion_support  
+    topic: religion  
+    post_stance: "support measures that counter anti‑Jewish and anti‑Muslim hate speech online"  
+    opposing_stance: "oppose measures that counter anti‑Jewish and anti‑Muslim hate speech online, arguing they restrict freedom of expression or are unnecessary over‑regulation"  
+    target_group: "religious minorities and civil‑liberties groups"  
+    values: progressive  
+    enabled: true  
+
+  - id: anti_hate_religion_support  
+    topic: religion  
+    post_stance: "oppose measures that counter anti‑Jewish and anti‑Muslim hate speech online, arguing they restrict freedom of expression or are unnecessary over‑regulation"  
+    opposing_stance: "support measures that counter anti‑Jewish and anti‑Muslim hate speech online"  
+    target_group: "religious minorities and civil‑liberties groups"  
+    values: conservative  
+    enabled: true  
+
+  # -----------------------------------------------
+  # gender 
+  # -----------------------------------------------
+
+  - id: gender_identity_support  
+    topic: gender
+    post_stance: "support protections for transgender, non‑binary and LGBTI+ individuals, including anti‑discrimination laws or inclusive education"  
+    opposing_stance: "oppose protections for transgender, non‑binary and LGBTI+ individuals, contending they conflict with traditional cultural or religious values"  
+    target_group: "LGBTI+ rights organisations and minorities"  
+    values: progressive
+    enabled: true  
+  
+  - id: gender_identity_oppose 
+    topic: gender
+    post_stance: "oppose protections for transgender, non‑binary and LGBTI+ individuals, contending they conflict with traditional cultural or religious values"  
+    opposing_stance: "support protections for transgender, non‑binary and LGBTI+ individuals, including anti‑discrimination laws or inclusive education"  
+    target_group: "LGBTI+ rights organisations and minorities"  
+    values: conservative
+    enabled: true  
+  
+    # -----------------------------------------------
+    # Nationalismr 
+    # -----------------------------------------------
+
+  - id: inclusive_nationalism_support  
+    topic: national_identity
+    post_stance: "support and promote cultural diversity"  
+    opposing_stance: "oppose cultural diversity, promoting an exclusive nationalism that prioritises a single ethnic or cultural identity"
+    target_group: "civic‑nationalism proponents and multicultural organisations"  
+    values: progressive  
+    enabled: true  
+
+  - id: inclusive_nationalism_oppose  
+    topic: national_identity
+    post_stance: "oppose cultural diversity, promoting an exclusive nationalism that prioritises a single ethnic or cultural identity"
+    opposing_stance: "support and promote cultural diversity"  
+    target_group: "civic‑nationalism proponents and multicultural organisations"  
+    values: conservative  
+    enabled: true  

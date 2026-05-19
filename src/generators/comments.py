@@ -18,6 +18,7 @@ from pydantic import ValidationError
 
 from src.llm_client import LLMClient
 from src.models import Comment, CommentSeverity, OriginalPost, Profile
+from src.policies import PolicyCondition
 from src.prompts import PromptBuilder
 from src.generators.posts import get_target_group
 from src.sampling import Condition
@@ -50,14 +51,28 @@ async def generate_comment(
     seed = derive_seed(base_seed, "comment", comment_id)
     target_group = get_target_group(condition.topic, condition.values)
 
-    system, user, prompt_hash = prompt_builder.comment(
-        severity=severity.value,
-        comment_id=comment_id,
-        post_id=post.post_id,
-        topic=post.topic.value,
-        caption=post.caption,
-        target_group=target_group,
-    )
+    if isinstance(condition, PolicyCondition) and condition.opposing_stance:
+        if condition.target_group_override:
+            target_group = condition.target_group_override
+        system, user, prompt_hash = prompt_builder.build(
+            f"comment_{severity.value}_policy",
+            comment_id=comment_id,
+            post_id=post.post_id,
+            topic=post.topic.value,
+            caption=post.caption,
+            target_group=target_group,
+            post_stance=condition.post_stance,
+            opposing_stance=condition.opposing_stance,
+        )
+    else:
+        system, user, prompt_hash = prompt_builder.comment(
+            severity=severity.value,
+            comment_id=comment_id,
+            post_id=post.post_id,
+            topic=post.topic.value,
+            caption=post.caption,
+            target_group=target_group,
+        )
 
     log.debug("Generating comment %s  severity=%s", comment_id, severity.value)
     raw = await client.complete_json(system, user, seed=seed)

@@ -150,7 +150,7 @@ comment_inciting_violence:
     comments for an academic study on hate speech escalation. Return ONLY
     valid JSON — no markdown, no explanations.
   user: |
-    Generate a realistic social media comment that INCITES VIOLENCE
+    Generate a realistic social media comment that INCITES STRONG HOSTILITY
     (severity level 3 of 3) in response to this Instagram post.
 
     Original post (topic: {topic}):
@@ -158,9 +158,154 @@ comment_inciting_violence:
 
     Target group implied by the post: {target_group}
 
+    SEVERITY LEVEL 3 — INCITING STRONG HOSTILITY:
+    - Moves beyond dehumanisation to explicit threat, call-to-action,
+      or endorsement of strong hostility against the poster's group.
+    - May include: "should be removed", "deserve what's coming", "should be punished",
+      "someone should punch them", direct threats, or celebration
+      of strong hostility against the group.
+    - 10–35 words.
+
+    Return ONLY this JSON object (no markdown, no explanation):
+    {{
+      "comment_id": "{comment_id}",
+      "post_id": "{post_id}",
+      "severity": "inciting_violence",
+      "text": "<comment text>",
+      "toxicity_estimate": <float 0.0–1.0; expected range 0.75–1.0>,
+      "target_group": "{target_group}",
+      "contains_explicit_violence": true
+    }}
+
+post_generation_policy:
+  system: >
+    You are a social-science researcher creating realistic synthetic Instagram
+    captions for an academic study on online hate speech. All content is
+    fictional and for research purposes. Return ONLY valid JSON — no markdown,
+    no explanations.
+  user: |
+    Generate a realistic Instagram post caption for this fictional profile.
+
+    Profile context:
+    - username: {username}
+    - age_group: {age_group}
+    - gender: {gender}
+    - values: {values}
+    - writing_style: {writing_style}
+    - topic: {topic}
+
+    SPECIFIC POLICY STANCE THE POST MUST EXPRESS:
+    "{post_stance}"
+
+    STRICT RULES:
+    1. The caption MUST clearly and directly express the stance above.
+    2. It MAY be polarizing or politically charged.
+    3. It MUST NEVER contain hate speech, slurs, or calls to violence.
+    4. It must be 15–40 words (caption text only, excluding hashtags).
+    5. Include 2–4 relevant hashtags.
+    6. Match the writing_style: {writing_style}.
+    7. Sound like a real Instagram post from a {age_group} ({gender}).
+    8. Do NOT start with "I think" or "In my opinion".
+
+    Return ONLY this JSON object (no markdown, no explanation):
+    {{
+      "post_id": "{post_id}",
+      "profile_id": "{profile_id}",
+      "topic": "{topic}",
+      "caption": "<caption text, 15–40 words>",
+      "hashtags": ["<tag1>", "<tag2>", "<tag3>"],
+      "word_count": <integer>
+    }}
+
+comment_opposing_opinion_policy:
+  system: >
+    You are a social-science researcher generating synthetic social media
+    comments for an academic study on hate speech escalation. Return ONLY
+    valid JSON — no markdown, no explanations.
+  user: |
+    Generate a realistic social media comment that expresses OPPOSING OPINION
+    (severity level 1 of 3) in response to this Instagram post.
+
+    Original post (topic: {topic}):
+    "{caption}"
+
+    The post argues for: "{post_stance}"
+    The commenter argues for: "{opposing_stance}"
+    Target group implied by the post: {target_group}
+
+    SEVERITY LEVEL 1 — OPPOSING OPINION:
+    - Express strong disagreement with the specific policy stance above.
+    - May be blunt, dismissive, or condescending.
+    - Targets the IDEA and the policy, not the person's group identity.
+    - No slurs, no dehumanisation, no threats.
+    - Realistic social media tone (may be sarcastic or frustrated).
+    - 10–35 words.
+
+    Return ONLY this JSON object (no markdown, no explanation):
+    {{
+      "comment_id": "{comment_id}",
+      "post_id": "{post_id}",
+      "severity": "opposing_opinion",
+      "text": "<comment text>",
+      "toxicity_estimate": <float 0.0–1.0; expected range 0.1–0.35>,
+      "target_group": "{target_group}",
+      "contains_explicit_violence": false
+    }}
+
+comment_dehumanising_policy:
+  system: >
+    You are a social-science researcher generating synthetic social media
+    comments for an academic study on hate speech escalation. Return ONLY
+    valid JSON — no markdown, no explanations.
+  user: |
+    Generate a realistic social media comment that is DEHUMANISING
+    (severity level 2 of 3) in response to this Instagram post.
+
+    Original post (topic: {topic}):
+    "{caption}"
+
+    The post argues for: "{post_stance}"
+    The commenter argues for: "{opposing_stance}"
+    Target group implied by the post: {target_group}
+
+    SEVERITY LEVEL 2 — DEHUMANISING:
+    - Attacks the GROUP IDENTITY of people who hold the post's stance, not just the idea.
+    - Uses othering language ("those people", "they always"), stereotypes,
+      disgust framing, or comparisons that strip dignity.
+    - May include coded language or dog whistles.
+    - Does NOT include explicit calls to violence or direct threats.
+    - 10–35 words.
+
+    Return ONLY this JSON object (no markdown, no explanation):
+    {{
+      "comment_id": "{comment_id}",
+      "post_id": "{post_id}",
+      "severity": "dehumanising",
+      "text": "<comment text>",
+      "toxicity_estimate": <float 0.0–1.0; expected range 0.50–0.80>,
+      "target_group": "{target_group}",
+      "contains_explicit_violence": false
+    }}
+
+comment_inciting_violence_policy:
+  system: >
+    You are a social-science researcher generating synthetic social media
+    comments for an academic study on hate speech escalation. Return ONLY
+    valid JSON — no markdown, no explanations.
+  user: |
+    Generate a realistic social media comment that INCITES VIOLENCE
+    (severity level 3 of 3) in response to this Instagram post.
+
+    Original post (topic: {topic}):
+    "{caption}"
+
+    The post argues for: "{post_stance}"
+    The commenter argues for: "{opposing_stance}"
+    Target group implied by the post: {target_group}
+
     SEVERITY LEVEL 3 — INCITING VIOLENCE:
     - Moves beyond dehumanisation to explicit threat, call-to-action,
-      or endorsement of violence against the poster's group.
+      or endorsement of violence against people who hold the post's stance.
     - May include: "should be removed", "deserve what's coming",
       "someone should deal with them", direct threats, or celebration
       of violence against the group.

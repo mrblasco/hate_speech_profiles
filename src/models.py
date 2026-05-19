@@ -21,6 +21,8 @@ class Topic(str, Enum):
     immigration      = "immigration"
     feminism         = "feminism"
     religion         = "religion"
+    gender          = "gender"
+    racism          = "racism"
     climate          = "climate"
     public_health    = "public_health"
     national_identity = "national_identity"
@@ -55,9 +57,11 @@ class Religion(str, Enum):
 
 
 class CountryOfOrigin(str, Enum):
+    belgium = "Belgium"
     italy  = "Italy"
     spain  = "Spain"
     france = "France"
+    germany = "Germany"
 
 
 # ── Core domain models ────────────────────────────────────────────────────────
@@ -197,6 +201,11 @@ class StimulusRow(BaseModel):
     target_group:            str
     contains_explicit_violence: bool
 
+    # Policy fields (None in standard topic-based runs)
+    policy_id:       Optional[str] = None
+    post_stance:     Optional[str] = None
+    opposing_stance: Optional[str] = None
+
     # Validation fields
     judge_severity_score:    Optional[int]   = None
     judge_severity_label:    Optional[str]   = None
@@ -222,6 +231,9 @@ class StimulusRow(BaseModel):
         judge: Optional[SeverityJudgement] = None,
         realism: Optional[RealismCheck] = None,
         passed: bool = True,
+        policy_id: Optional[str] = None,
+        post_stance: Optional[str] = None,
+        opposing_stance: Optional[str] = None,
     ) -> "StimulusRow":
         stimulus_id = f"{post.post_id}_{comment.severity.value}"
         return cls(
@@ -258,6 +270,9 @@ class StimulusRow(BaseModel):
             ),
             realism_score=realism.realism_score if realism else None,
             passed_validation=passed,
+            policy_id=policy_id,
+            post_stance=post_stance,
+            opposing_stance=opposing_stance,
             model_name=meta.model_name,
             prompt_hash=meta.prompt_hash,
             temperature=meta.temperature,
