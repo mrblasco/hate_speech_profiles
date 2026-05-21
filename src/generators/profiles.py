@@ -36,37 +36,54 @@ async def generate_profile(
     """
     Generate and validate one Profile.
 
+    When condition.popularity_level is set (CSV mode), uses the
+    profile_generation_free prompt — the LLM chooses age_group and religion
+    freely; topic and stance are not tied to the profile.
+
     Returns (profile, prompt_hash).
     Raises ValueError if schema validation fails after all retries.
     """
-    age_min, age_max = AGE_RANGES[condition.age_group]
     seed = derive_seed(base_seed, "profile", condition.profile_id)
 
-    system, user, prompt_hash = prompt_builder.profile(
-        profile_id=condition.profile_id,
-        topic=condition.topic,
-        age_group=condition.age_group,
-        age_min=age_min,
-        age_max=age_max,
-        gender=condition.gender,
-        values=condition.values,
-        religion=condition.religion,
-        country_of_origin=condition.country_of_origin,
-    )
+    free_mode = bool(condition.popularity_level)
 
-    log.debug("Generating profile %s (topic=%s, %s/%s/%s)",
-              condition.profile_id, condition.topic,
-              condition.age_group, condition.gender, condition.values)
+    if free_mode:
+        system, user, prompt_hash = prompt_builder.profile_free(
+            profile_id=condition.profile_id,
+            gender=condition.gender,
+            popularity_level=condition.popularity_level,
+            country_of_origin=condition.country_of_origin,
+        )
+        log.debug("Generating free profile %s (%s, %s, %s)",
+                  condition.profile_id, condition.gender,
+                  condition.popularity_level, condition.country_of_origin)
+    else:
+        age_min, age_max = AGE_RANGES.get(condition.age_group, (18, 25))
+        system, user, prompt_hash = prompt_builder.profile(
+            profile_id=condition.profile_id,
+            topic=condition.topic,
+            age_group=condition.age_group,
+            age_min=age_min,
+            age_max=age_max,
+            gender=condition.gender,
+            stance=condition.stance,
+            religion=condition.religion,
+            country_of_origin=condition.country_of_origin,
+        )
+        log.debug("Generating profile %s (topic=%s, %s/%s/%s)",
+                  condition.profile_id, condition.topic,
+                  condition.age_group, condition.gender, condition.stance)
 
     raw = await client.complete_json(system, user, seed=seed)
 
     # Ensure required fields that the LLM might omit
     raw.setdefault("profile_id",        condition.profile_id)
-    raw.setdefault("age_group",         condition.age_group)
     raw.setdefault("gender",            condition.gender)
-    raw.setdefault("values",            condition.values)
-    raw.setdefault("religion",          condition.religion)
     raw.setdefault("country_of_origin", condition.country_of_origin)
+    if not free_mode:
+        raw.setdefault("age_group",     condition.age_group)
+        raw.setdefault("stance",        condition.stance)
+        raw.setdefault("religion",      condition.religion)
 
     try:
         profile = Profile.model_validate(raw)
@@ -75,10 +92,10 @@ async def generate_profile(
             f"Profile schema validation failed for {condition.profile_id}: {exc}"
         ) from exc
 
-    log.info("  ✓ Profile %s  @%s  (%s, %s, %s)",
+    log.info("  ✓ Profile %s  @%s  (%s, %s)",
              profile.profile_id, profile.username,
-             profile.topic if hasattr(profile, "topic") else condition.topic,
-             profile.gender.value, profile.values.value)
+             profile.gender.value,
+             profile.stance.value if profile.stance else "no-stance")
 
     return profile, prompt_hash
 

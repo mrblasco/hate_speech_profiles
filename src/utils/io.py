@@ -1,10 +1,11 @@
-"""I/O helpers: JSON, JSONL, CSV, YAML, caching."""
+"""I/O helpers: JSON, JSONL, CSV, YAML, caching, topic registry."""
 
 from __future__ import annotations
 
 import csv
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -71,6 +72,92 @@ def save_csv(records: list[dict], path: Path) -> None:
         writer.writeheader()
         writer.writerows(records)
     log.info(f"Wrote {len(records)} rows → {path}")
+
+
+# ── Topic registry ────────────────────────────────────────────────────────────
+
+@dataclass
+class TopicMeta:
+    topic_id:       str
+    csv_label:      str
+    prompt_label:   str          # concrete policy statement for LLM prompts
+    stance_support: str          # topic-specific stance text, e.g. "support gender quotas"
+    stance_oppose:  str          # topic-specific stance text, e.g. "oppose gender quotas"
+    gradient:       str
+    emoji:          str
+    target_support: str | None = None   # optional: social group when posting in support
+    target_oppose:  str | None = None   # optional: social group when posting in opposition
+
+
+class TopicRegistry:
+    """
+    Loaded from configs/topics.yaml. Single source of truth for all topic
+    metadata. Replaces the scattered TOPIC_LABELS / TARGET_GROUPS /
+    TOPIC_GRADIENTS / TOPIC_EMOJIS dicts that were previously in Python code.
+    """
+
+    def __init__(self, topics_path: Path) -> None:
+        raw = load_yaml(topics_path).get("topics", {})
+        self._by_id:        dict[str, TopicMeta] = {}
+        self._by_csv_label: dict[str, str]       = {}   # csv_label → topic_id
+
+        for topic_id, spec in raw.items():
+            tg = spec.get("target_groups") or {}
+            sl = spec.get("stance_labels") or {}
+            meta = TopicMeta(
+                topic_id=topic_id,
+                csv_label=spec["csv_label"],
+                prompt_label=spec["prompt_label"],
+                stance_support=sl.get("support", f"support {topic_id}"),
+                stance_oppose=sl.get("oppose",   f"oppose {topic_id}"),
+                gradient=spec["gradient"],
+                emoji=spec["emoji"],
+                target_support=tg.get("support"),
+                target_oppose=tg.get("oppose"),
+            )
+            self._by_id[topic_id] = meta
+            self._by_csv_label[spec["csv_label"]] = topic_id
+
+    # ── Lookups ───────────────────────────────────────────────────────────────
+
+    def topic_id_from_csv(self, csv_label: str) -> str:
+        """Convert a CSV topics value to an internal topic_id. Raises KeyError on miss."""
+        if csv_label not in self._by_csv_label:
+            raise KeyError(
+                f"Unknown CSV topic label {csv_label!r}. "
+                f"Add it to configs/topics.yaml."
+            )
+        return self._by_csv_label[csv_label]
+
+    def get(self, topic_id: str) -> TopicMeta:
+        if topic_id not in self._by_id:
+            raise KeyError(
+                f"Unknown topic_id {topic_id!r}. "
+                f"Add it to configs/topics.yaml."
+            )
+        return self._by_id[topic_id]
+
+    def prompt_label(self, topic_id: str) -> str:
+        return self.get(topic_id).prompt_label
+
+    def stance_label(self, topic_id: str, stance: str) -> str:
+        """Return the topic-specific stance text, e.g. 'support gender quotas'."""
+        meta = self.get(topic_id)
+        return meta.stance_support if stance == "support" else meta.stance_oppose
+
+    def target_group(self, topic_id: str, stance: str) -> str | None:
+        """Return the social group the post aligns with, or None if not configured."""
+        meta = self.get(topic_id)
+        return meta.target_support if stance == "support" else meta.target_oppose
+
+    def gradient(self, topic_id: str) -> str:
+        return self.get(topic_id).gradient
+
+    def emoji(self, topic_id: str) -> str:
+        return self.get(topic_id).emoji
+
+    def all_topic_ids(self) -> list[str]:
+        return list(self._by_id.keys())
 
 
 # ── Disk cache ────────────────────────────────────────────────────────────────

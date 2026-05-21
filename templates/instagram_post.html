@@ -143,10 +143,12 @@
         {% endif %}
 
         <!-- Hateful comment (the experimental stimulus) -->
+        {% if show_comment %}
         <p class="post-comment">
             <span class="comment-author">{{ commenter_username }}</span>
             <span class="comment-text">{{ comment_text }}</span>
         </p>
+        {% endif %}
 
         <p class="post-timestamp">{{ post_age }}</p>
     </div>

@@ -4,6 +4,9 @@ Post generator: creates non-hateful Instagram captions for each profile.
 The caption expresses an opinionated but hate-speech-free perspective on the
 profile's topic. Word count and style are constrained by prompts and validated
 post-generation.
+
+Topic labels and target groups are read from configs/topics.yaml via
+TopicRegistry — no hardcoded dicts in this file.
 """
 
 from __future__ import annotations
@@ -17,39 +20,30 @@ from src.models import OriginalPost, Profile, Topic
 from src.policies import PolicyCondition
 from src.prompts import PromptBuilder
 from src.sampling import Condition
+from src.utils.io import TopicRegistry
 from src.utils.seeds import derive_seed
 
 log = logging.getLogger("pipeline.generators.posts")
 
-# Maps topic enum values to human-readable labels used in prompts
-TOPIC_LABELS: dict[str, str] = {
-    "immigration":       "immigration and migration policy",
-    "feminism":          "feminism and gender equality",
-    "religion":          "religion and religious freedom",
-    "climate":           "climate change and environmental policy",
-    "public_health":     "public health policy and vaccines",
-    "national_identity": "national identity and patriotism",
-}
-
-# Maps topic + values to implied target group (used for comment generation)
-TARGET_GROUPS: dict[tuple[str, str], str] = {
-    ("immigration",       "progressive"):  "immigrants and refugees",
-    ("immigration",       "conservative"): "immigration critics",
-    ("feminism",          "progressive"):  "women and feminist activists",
-    ("feminism",          "conservative"): "traditionalist women and men",
-    ("religion",          "progressive"):  "religious minorities",
-    ("religion",          "conservative"): "secularists",
-    ("climate",           "progressive"):  "climate activists",
-    ("climate",           "conservative"): "climate-change sceptics",
-    ("public_health",     "progressive"):  "public health advocates",
-    ("public_health",     "conservative"): "vaccine sceptics",
-    ("national_identity", "progressive"):  "multicultural communities",
-    ("national_identity", "conservative"): "nationalists",
-}
+_registry: TopicRegistry | None = None
 
 
-def get_target_group(topic: str, values: str) -> str:
-    return TARGET_GROUPS.get((topic, values), "the poster's community")
+def init_registry(registry: TopicRegistry) -> None:
+    """Call once at pipeline startup to inject the shared TopicRegistry."""
+    global _registry
+    _registry = registry
+
+
+def _get_registry() -> TopicRegistry:
+    if _registry is None:
+        raise RuntimeError(
+            "TopicRegistry not initialised. Call posts.init_registry() first."
+        )
+    return _registry
+
+
+def get_target_group(topic: str, stance: str) -> str:
+    return _get_registry().target_group(topic, stance)
 
 
 async def generate_post(
@@ -66,7 +60,10 @@ async def generate_post(
     """
     post_id = f"{profile.profile_id}_POST{post_index:02d}"
     seed = derive_seed(base_seed, "post", post_id)
-    topic_label = TOPIC_LABELS.get(condition.topic, condition.topic)
+    registry = _get_registry()
+    topic_label   = registry.prompt_label(condition.topic)  if condition.topic else condition.topic
+    stance_label  = registry.stance_label(condition.topic, condition.stance) \
+                    if condition.topic else condition.stance
 
     if isinstance(condition, PolicyCondition) and condition.post_stance:
         system, user, prompt_hash = prompt_builder.build(
@@ -76,7 +73,7 @@ async def generate_post(
             username=profile.username,
             age_group=condition.age_group,
             gender=condition.gender,
-            values=condition.values,
+            stance=condition.stance,
             writing_style=profile.writing_style,
             topic=topic_label,
             post_stance=condition.post_stance,
@@ -86,9 +83,10 @@ async def generate_post(
             post_id=post_id,
             profile_id=profile.profile_id,
             username=profile.username,
-            age_group=condition.age_group,
+            age_group=condition.age_group or "young_adult",
             gender=condition.gender,
-            values=condition.values,
+            stance=condition.stance,
+            stance_label=stance_label,
             writing_style=profile.writing_style,
             topic=topic_label,
         )

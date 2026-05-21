@@ -14,9 +14,9 @@ design:
     - public_health
     - national_identity
 
-  values:
-    - progressive
-    - conservative
+  stances:
+    - support
+    - oppose
 
   age_groups:
     #- adolescent     # 13–17
@@ -75,6 +75,9 @@ generation:
 
   # Cache LLM responses to disk for reproducibility
   enable_cache: true
+
+  # Username shown for anonymous commenters in HTML/PNG stimuli
+  anonymous_display_name: "anonymous_user"
 
 validation:
   # Run LLM judge for severity classification

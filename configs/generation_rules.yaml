@@ -8,7 +8,7 @@ post_rules:
   never_slurs: true
   style: "realistic Instagram caption"
   min_words: 15
-  max_words: 40
+  max_words: 36
   allowed_elements:
     - hashtags
     - emojis

@@ -284,12 +284,18 @@ body {
     display: block;
 }
 
-/* ── Hate Comment ──────────────────────────────────────────── */
+/* ── Highlighted Comment (the experimental stimulus) ───────── */
+/*    Yellow background draws the respondent's eye while reading  */
+/*    like a native "top comment" or "mentioned you" highlight.   */
 .post-comment {
     font-size: 14px;
     line-height: 1.5;
     color: #262626;
-    padding-bottom: 2px;
+    background-color: #FEF08A;   /* yellow-200 — clearly visible in PNG */
+    border-left: 3px solid #CA8A04;  /* amber-600 accent bar */
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin: 2px 0 4px;
 }
 
 .post-comment .comment-author {

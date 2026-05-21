@@ -6,7 +6,7 @@
                bio, post_count, followers, following,
                highlight_items (list of {emoji, label}),
                grid_items (list of 9 {gradient, emoji}),
-               topic, values, religion, country_of_origin, topic_emoji
+               topic, stance, religion, country_of_origin, topic_emoji
 -->
 <html lang="{{ lang }}">
 <head>
@@ -97,7 +97,7 @@
             <span class="bio-meta-sep">·</span>
             <span class="bio-meta-chip">{{ religion_emoji }} {{ religion }}</span>
             <span class="bio-meta-sep">·</span>
-            <span class="bio-meta-chip">{{ values | title }}</span>
+            <span class="bio-meta-chip">{{ stance | title }}</span>
         </div>
     </div>
 

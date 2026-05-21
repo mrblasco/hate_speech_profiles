@@ -32,11 +32,13 @@ class PolicyCondition(Condition):
     """
     A Condition extended with explicit policy stance information.
     Inherits all demographic fields from Condition; policy fields are additive.
+    `post_stance` / `opposing_stance` are the exact sentences used in prompts
+    and are distinct from `Condition.stance` (the binary support/oppose flag).
     """
     policy_id:             str = ""
-    post_stance:           str = ""
-    opposing_stance:       str = ""
-    target_group_override: str = ""  # overrides TARGET_GROUPS lookup in posts.py
+    post_stance:           str = ""   # exact stance sentence for prompt
+    opposing_stance:       str = ""   # exact opposing sentence for prompt
+    target_group_override: str = ""   # overrides TopicRegistry lookup
 
 
 def load_policies(policies_path: Path) -> list[dict]:
@@ -101,14 +103,16 @@ def build_policy_conditions(
 
         policy_id    = policy["id"]
         topic        = policy["topic"]
-        values       = policy.get("values", "progressive")
+        # policies.yaml uses "progressive"/"conservative" — map to support/oppose
+        _values_raw  = policy.get("values", "progressive")
+        stance       = "support" if _values_raw == "progressive" else "oppose"
         post_stance  = policy["post_stance"]
         opp_stance   = policy["opposing_stance"]
         tg_override  = policy.get("target_group", "")
 
         log.info(
-            "  Policy %-30s  topic=%-15s values=%-12s  n=%d",
-            policy_id, topic, values, count,
+            "  Policy %-30s  topic=%-15s stance=%-8s  n=%d",
+            policy_id, topic, stance, count,
         )
 
         for age_group, gender, religion, country_of_origin in shuffled:
@@ -119,7 +123,7 @@ def build_policy_conditions(
                 topic=topic,
                 age_group=age_group,
                 gender=gender,
-                values=values,
+                stance=stance,
                 religion=religion,
                 country_of_origin=country_of_origin,
                 policy_id=policy_id,

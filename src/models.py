@@ -18,14 +18,15 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # ── Enumerations ──────────────────────────────────────────────────────────────
 
 class Topic(str, Enum):
-    immigration      = "immigration"
-    feminism         = "feminism"
-    religion         = "religion"
-    gender          = "gender"
-    racism          = "racism"
-    climate          = "climate"
-    public_health    = "public_health"
+    immigration       = "immigration"
+    feminism          = "feminism"
+    religion          = "religion"
+    gender            = "gender"
+    racism            = "racism"
+    climate           = "climate"
+    public_health     = "public_health"
     national_identity = "national_identity"
+    hate_speech       = "hate_speech"
 
 
 class AgeGroup(str, Enum):
@@ -39,9 +40,9 @@ class Gender(str, Enum):
     nonbinary = "nonbinary"
 
 
-class Values(str, Enum):
-    progressive  = "progressive"
-    conservative = "conservative"
+class Stance(str, Enum):
+    support = "support"
+    oppose  = "oppose"
 
 
 class CommentSeverity(str, Enum):
@@ -73,7 +74,7 @@ class Profile(BaseModel):
     age:               int = Field(ge=13, le=25)
     age_group:         AgeGroup
     gender:            Gender
-    values:            Values
+    stance:            Optional[Stance]         = None
     religion:          Religion
     country_of_origin: CountryOfOrigin
     interests:         list[str] = Field(min_length=1, max_length=5)
@@ -180,11 +181,16 @@ class StimulusRow(BaseModel):
     age:               int
     age_group:         AgeGroup
     gender:            Gender
-    values:            Values
+    stance:            Optional[Stance]            = None
     religion:          Optional[Religion]          = None
     country_of_origin: Optional[CountryOfOrigin]  = None
     writing_style:     str
     bio:               str
+
+    # CSV design fields (set only when pipeline is driven by an external CSV)
+    respondent_id:     Optional[str] = None   # links row back to survey instrument
+    anonymity:         Optional[str] = None   # "named" | "anonymous"
+    popularity:        Optional[str] = None   # "ordinary user" | "active user" | "micro-influencer"
 
     # Post fields
     post_id:       str
@@ -234,6 +240,9 @@ class StimulusRow(BaseModel):
         policy_id: Optional[str] = None,
         post_stance: Optional[str] = None,
         opposing_stance: Optional[str] = None,
+        respondent_id: Optional[str] = None,
+        anonymity: Optional[str] = None,
+        popularity: Optional[str] = None,
     ) -> "StimulusRow":
         stimulus_id = f"{post.post_id}_{comment.severity.value}"
         return cls(
@@ -246,7 +255,7 @@ class StimulusRow(BaseModel):
             age=profile.age,
             age_group=profile.age_group,
             gender=profile.gender,
-            values=profile.values,
+            stance=profile.stance,
             religion=profile.religion,
             country_of_origin=profile.country_of_origin,
             writing_style=profile.writing_style,
@@ -273,6 +282,9 @@ class StimulusRow(BaseModel):
             policy_id=policy_id,
             post_stance=post_stance,
             opposing_stance=opposing_stance,
+            respondent_id=respondent_id,
+            anonymity=anonymity,
+            popularity=popularity,
             model_name=meta.model_name,
             prompt_hash=meta.prompt_hash,
             temperature=meta.temperature,
@@ -302,6 +314,6 @@ class RunManifest(BaseModel):
     topics:            list[str]
     age_groups:        list[str]
     genders:           list[str]
-    values:            list[str]
+    stances:           list[str]
     severities:        list[str]
     output_files:      dict[str, str] = Field(default_factory=dict)

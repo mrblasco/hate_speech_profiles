@@ -149,3 +149,14 @@ help:                             ## Show this help
 	  | awk 'BEGIN {FS = ":.*##"}; {printf "  %-18s %s\n", $$1, $$2}'
 
 .DEFAULT_GOAL := help
+
+
+
+test2:
+	export OPENAI_API_KEY=$$JRC_OPENAI_API_KEY && \
+	export OPENAI_BASE_URL=https://api-gpt.jrc.ec.europa.eu/v1 && \
+	.venv/bin/python src/main.py \
+	--from-csv stim_df_italy.csv \
+	--output_dir outputs/test_italy_v2 \
+	--no-judge --no-realism \
+	--model gpt-oss-120b

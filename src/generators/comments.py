@@ -49,11 +49,10 @@ async def generate_comment(
     """
     comment_id = f"{post.post_id}_{severity.value.upper()[:3]}{comment_index:02d}"
     seed = derive_seed(base_seed, "comment", comment_id)
-    target_group = get_target_group(condition.topic, condition.values)
+    raw_tg = get_target_group(condition.topic, condition.stance)   # str | None
 
     if isinstance(condition, PolicyCondition) and condition.opposing_stance:
-        if condition.target_group_override:
-            target_group = condition.target_group_override
+        target_group = condition.target_group_override or raw_tg or ""
         system, user, prompt_hash = prompt_builder.build(
             f"comment_{severity.value}_policy",
             comment_id=comment_id,
@@ -65,13 +64,18 @@ async def generate_comment(
             opposing_stance=condition.opposing_stance,
         )
     else:
+        target_group_context = (
+            f"Target group implied by the post: {raw_tg}"
+            if raw_tg
+            else "Target group: infer from the post's content"
+        )
         system, user, prompt_hash = prompt_builder.comment(
             severity=severity.value,
             comment_id=comment_id,
             post_id=post.post_id,
             topic=post.topic.value,
             caption=post.caption,
-            target_group=target_group,
+            target_group_context=target_group_context,
         )
 
     log.debug("Generating comment %s  severity=%s", comment_id, severity.value)
@@ -80,7 +84,7 @@ async def generate_comment(
     raw.setdefault("comment_id",               comment_id)
     raw.setdefault("post_id",                  post.post_id)
     raw.setdefault("severity",                 severity.value)
-    raw.setdefault("target_group",             target_group)
+    raw.setdefault("target_group",             raw_tg or "")
     raw.setdefault("contains_explicit_violence",
                    severity == CommentSeverity.inciting_violence)
 

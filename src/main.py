@@ -121,8 +121,21 @@ def parse_args() -> argparse.Namespace:
         "--policies", type=Path, default=None, metavar="PATH",
         help="Path to policies.yaml. Activates policy mode: each policy defines "
              "the exact post stance and the opposing stance for hate-speech comments. "
-             "Replaces the standard topic×values design matrix. "
+             "Replaces the standard topic×stance design matrix. "
              "Example: configs/policies.yaml",
+    )
+    parser.add_argument(
+        "--from-csv", type=Path, default=None, metavar="PATH",
+        help="Path to an R-generated stimulus design CSV. When provided, posts and "
+             "comments are generated from this design instead of the internal sampler. "
+             "Example: data/stim_df_italy.csv",
+    )
+    parser.add_argument(
+        "--country", type=str, default=None,
+        metavar="COUNTRY",
+        help="Country of origin for all profiles in this run "
+             "(Belgium|Italy|Spain|France|Germany). "
+             "Auto-detected from the CSV filename when omitted.",
     )
     return parser.parse_args()
 
@@ -231,6 +244,8 @@ async def main() -> None:
         generate_html=args.html or args.screenshots,
         screenshots=args.screenshots,
         policies_cfg=policies_cfg,
+        csv_path=getattr(args, "from_csv", None),
+        country=getattr(args, "country", None) or "",
     )
 
     manifest = await run_pipeline(cfg, configs_dir=CONFIGS_DIR)

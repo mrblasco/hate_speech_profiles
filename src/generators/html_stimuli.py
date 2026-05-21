@@ -5,9 +5,12 @@ Converts final StimulusRow objects into Instagram-style HTML files using
 templates/instagram_post.html + static/style.css, then optionally fires
 Playwright to produce HiDPI PNG screenshots.
 
-All visual decoration choices (avatar colour, commenter username, engagement
-numbers, post age) are derived deterministically from the run seed so the
-visual output is fully reproducible.
+For each (stimulus, engagement_variant) pair two HTML files are produced:
+  *_with_comment.html  — full stimulus including the comment
+  *_no_comment.html    — post only, comment block hidden
+
+Topic gradients, emojis, and target groups are read from configs/topics.yaml
+via TopicRegistry — no hardcoded dicts in this file.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 from src.models import StimulusRow
+from src.utils.io import TopicRegistry
 from src.utils.logging_utils import get_logger
 from src.utils.seeds import derive_seed
 
@@ -30,24 +34,6 @@ AVATAR_COLOURS = [
     "#4CAF50", "#FF9800", "#00BCD4", "#F44336",
     "#3F51B5", "#009688", "#8BC34A", "#FFC107",
 ]
-
-TOPIC_GRADIENTS: dict[str, str] = {
-    "immigration":       "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    "feminism":          "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-    "religion":          "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    "climate":           "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
-    "public_health":     "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    "national_identity": "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-}
-
-TOPIC_EMOJIS: dict[str, str] = {
-    "immigration":       "🌍",
-    "feminism":          "✊",
-    "religion":          "🕌",
-    "climate":           "🌱",
-    "public_health":     "💉",
-    "national_identity": "🏴",
-}
 
 COMMENTER_USERNAMES = [
     "user48291",       "real_talk_99",    "truth_seeker_x",  "anonymous_voice",
@@ -64,9 +50,7 @@ POST_AGES = [
     "5 HOURS AGO", "6 HOURS AGO", "8 HOURS AGO",
 ]
 
-# All 9 engagement rows from data/engagement.csv.
-# Each stimulus is rendered once per row → 9 HTML files per stimulus.
-# Tuple layout: (engagement_level, variant_index_within_level, likes, comments_count)
+# All 9 engagement rows. Tuple: (engagement_level, variant_index, likes, comments_count)
 ENGAGEMENT_ROWS: list[tuple[str, int, int, int]] = [
     ("low",    1,  12,   2),
     ("low",    2,  8,    3),
@@ -80,10 +64,37 @@ ENGAGEMENT_ROWS: list[tuple[str, int, int, int]] = [
 ]
 
 _FALLBACK_GRADIENT = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+_FALLBACK_EMOJI    = "📱"
 
 CAPTION_PREVIEW_LENGTH = 120
-SCREENSHOT_BATCH_SIZE = 20
-SCREENSHOT_VIEWPORT = {"width": 375, "height": 812}
+SCREENSHOT_BATCH_SIZE  = 20
+SCREENSHOT_VIEWPORT    = {"width": 375, "height": 812}
+
+_registry: TopicRegistry | None = None
+
+
+def init_registry(registry: TopicRegistry) -> None:
+    """Call once at pipeline startup to inject the shared TopicRegistry."""
+    global _registry
+    _registry = registry
+
+
+def _topic_gradient(topic: str) -> str:
+    if _registry:
+        try:
+            return _registry.gradient(topic)
+        except KeyError:
+            pass
+    return _FALLBACK_GRADIENT
+
+
+def _topic_emoji(topic: str) -> str:
+    if _registry:
+        try:
+            return _registry.emoji(topic)
+        except KeyError:
+            pass
+    return _FALLBACK_EMOJI
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,10 +110,10 @@ def _avatar_initials(display_name: str) -> str:
 # ── Context builder ───────────────────────────────────────────────────────────
 
 def _row_decoration(row: StimulusRow, base_seed: int) -> tuple[str, str, str]:
-    """Return (avatar_colour, commenter_username, post_age) — stable across engagement variants."""
-    avatar_colour      = _pick(AVATAR_COLOURS,        derive_seed(base_seed, "avatar",    row.profile_id))
-    commenter_username = _pick(COMMENTER_USERNAMES,   derive_seed(base_seed, "commenter", row.comment_id))
-    post_age           = _pick(POST_AGES,              derive_seed(base_seed, "age",       row.stimulus_id))
+    """Return (avatar_colour, commenter_username, post_age) — stable across variants."""
+    avatar_colour      = _pick(AVATAR_COLOURS,      derive_seed(base_seed, "avatar",    row.profile_id))
+    commenter_username = _pick(COMMENTER_USERNAMES, derive_seed(base_seed, "commenter", row.comment_id))
+    post_age           = _pick(POST_AGES,            derive_seed(base_seed, "age",       row.stimulus_id))
     return avatar_colour, commenter_username, post_age
 
 
@@ -114,8 +125,10 @@ def build_context(
     post_age: str,
     likes: int,
     comments_count: int,
+    show_comment: bool,
+    anonymous_display_name: str = "anonymous_user",
 ) -> dict:
-    topic = row.topic.value
+    topic = row.topic.value if hasattr(row.topic, "value") else str(row.topic)
 
     n = f"{comments_count:,}"
     likes_fmt = f"{likes:,}"
@@ -123,6 +136,12 @@ def build_context(
     caption = row.caption
     caption_truncated = len(caption) > CAPTION_PREVIEW_LENGTH
     caption_preview = caption[:CAPTION_PREVIEW_LENGTH].rstrip() + "…" if caption_truncated else caption
+
+    # Respect anonymity: hide real username when anonymous
+    anonymity = (row.anonymity or "named").lower()
+    display_commenter = (
+        anonymous_display_name if anonymity == "anonymous" else commenter_username
+    )
 
     return {
         "css":                css,
@@ -132,9 +151,9 @@ def build_context(
         "avatar_initials":    _avatar_initials(row.display_name),
         "avatar_colour":      avatar_colour,
         "target_message":     row.caption,
-        "topic_gradient":     TOPIC_GRADIENTS.get(topic, _FALLBACK_GRADIENT),
-        "topic_emoji":        TOPIC_EMOJIS.get(topic, "📱"),
-        "commenter_username": commenter_username,
+        "topic_gradient":     _topic_gradient(topic),
+        "topic_emoji":        _topic_emoji(topic),
+        "commenter_username": display_commenter,
         "comment_text":       row.comment_text,
         "likes":              likes_fmt,
         "comments_count":     n,
@@ -145,6 +164,7 @@ def build_context(
         "ui_more":            "… more",
         "caption_preview":    caption_preview,
         "caption_truncated":  caption_truncated,
+        "show_comment":       show_comment,
     }
 
 
@@ -155,25 +175,29 @@ def generate_html_stimuli(
     output_dir: Path,
     project_root: Path,
     base_seed: int,
+    likes_filter: str | None = None,
+    anonymous_display_name: str = "anonymous_user",
 ) -> list[Path]:
     """
-    Render 9 HTML files per StimulusRow — one per engagement row.
+    Render HTML stimuli for each StimulusRow.
 
-    Filename pattern: {stimulus_id}_{engagement_level}{variant_index}.html
-    e.g. P0001_POST00_opposing_opinion_low1.html
-
-    CSS is embedded inline so each file is self-contained for Playwright.
+    For every (row, engagement_variant) pair, two HTML files are written:
+      {stimulus_id}_{level}{variant}_with_comment.html
+      {stimulus_id}_{level}{variant}_no_comment.html
 
     Parameters
     ----------
-    rows:         Passed StimulusRow objects (from final stimuli).
-    output_dir:   Parent of the html/ subdirectory (e.g. outputs/run_001/final).
-    project_root: Repo root; templates/ and static/ are resolved from here.
-    base_seed:    Master run seed for deterministic decoration.
+    rows:                   Passed StimulusRow objects.
+    output_dir:             Parent of the html/ subdirectory.
+    project_root:           Repo root; templates/ and static/ resolved from here.
+    base_seed:              Master run seed for deterministic decoration.
+    likes_filter:           When set ("low"/"medium"/"high"), only render the 3
+                            engagement variants at that level (not all 9).
+    anonymous_display_name: Username shown when anonymity == "anonymous".
 
     Returns
     -------
-    List of all written HTML file paths (len = len(rows) × 9).
+    All written HTML file paths.
     """
     css_path = project_root / "static" / "style.css"
     if not css_path.exists():
@@ -189,17 +213,32 @@ def generate_html_stimuli(
     html_dir = output_dir / "html"
     html_dir.mkdir(parents=True, exist_ok=True)
 
+    # Filter engagement rows by likes level when requested
+    engagement_rows = ENGAGEMENT_ROWS
+    if likes_filter:
+        level_map = {"low": "low", "mid": "medium", "medium": "medium", "high": "high"}
+        target_level = level_map.get(likes_filter.lower(), likes_filter.lower())
+        engagement_rows = [r for r in ENGAGEMENT_ROWS if r[0] == target_level]
+        if not engagement_rows:
+            log.warning("likes_filter=%r matched no engagement rows; using all", likes_filter)
+            engagement_rows = ENGAGEMENT_ROWS
+
     html_paths: list[Path] = []
     for row in rows:
         avatar_colour, commenter_username, post_age = _row_decoration(row, base_seed)
-        for level, variant_idx, likes, comments_count in ENGAGEMENT_ROWS:
-            context = build_context(
-                row, css, avatar_colour, commenter_username, post_age, likes, comments_count
+        for level, variant_idx, likes, comments_count in engagement_rows:
+            base_ctx = dict(
+                row=row, css=css,
+                avatar_colour=avatar_colour, commenter_username=commenter_username,
+                post_age=post_age, likes=likes, comments_count=comments_count,
+                anonymous_display_name=anonymous_display_name,
             )
-            fname = f"{row.stimulus_id}_{level}{variant_idx}.html"
-            html_path = html_dir / fname
-            html_path.write_text(template.render(**context), encoding="utf-8")
-            html_paths.append(html_path)
+            for show_comment, suffix in ((True, "with_comment"), (False, "no_comment")):
+                ctx = build_context(show_comment=show_comment, **base_ctx)
+                fname = f"{row.stimulus_id}_{level}{variant_idx}_{suffix}.html"
+                html_path = html_dir / fname
+                html_path.write_text(template.render(**ctx), encoding="utf-8")
+                html_paths.append(html_path)
 
     log.info("Rendered %d HTML stimuli → %s", len(html_paths), html_dir)
     return html_paths

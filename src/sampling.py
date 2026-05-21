@@ -25,9 +25,10 @@ class Condition:
     topic:             str
     age_group:         str
     gender:            str
-    values:            str
+    stance:            str   # "support" | "oppose"
     religion:          str
     country_of_origin: str
+    popularity_level:  str = ""   # "ordinary user" | "active user" | "micro-influencer"
 
 
 def build_design_matrix(
@@ -35,7 +36,7 @@ def build_design_matrix(
     topics: list[str],
     age_groups: list[str],
     genders: list[str],
-    values: list[str],
+    stances: list[str],
     religions: list[str],
     countries_of_origin: list[str],
     seed: int,
@@ -45,7 +46,7 @@ def build_design_matrix(
 
     Strategy
     --------
-    All combinations of (topic, age_group, gender, values, religion,
+    All combinations of (topic, age_group, gender, stance, religion,
     country_of_origin) are enumerated, tiled to reach at least n_profiles
     rows, then shuffled deterministically. The first n_profiles rows are
     returned.
@@ -57,14 +58,14 @@ def build_design_matrix(
     """
     rng = make_rng(seed)
     combos = list(itertools.product(
-        topics, age_groups, genders, values, religions, countries_of_origin
+        topics, age_groups, genders, stances, religions, countries_of_origin
     ))
     n_combos = len(combos)
 
     log.info(
-        "Design: %d topics × %d age_groups × %d genders × %d values"
+        "Design: %d topics × %d age_groups × %d genders × %d stances"
         " × %d religions × %d countries = %d combos",
-        len(topics), len(age_groups), len(genders), len(values),
+        len(topics), len(age_groups), len(genders), len(stances),
         len(religions), len(countries_of_origin), n_combos,
     )
 
@@ -73,19 +74,19 @@ def build_design_matrix(
     shuffled = rng.sample(pool, len(pool))
 
     conditions: list[Condition] = []
-    for idx, (topic, age_group, gender, values_, religion, country_of_origin) in enumerate(shuffled):
+    for idx, (topic, age_group, gender, stance, religion, country_of_origin) in enumerate(shuffled):
         profile_id = f"P{idx + 1:04d}"
         conditions.append(Condition(
             profile_id=profile_id,
             topic=topic,
             age_group=age_group,
             gender=gender,
-            values=values_,
+            stance=stance,
             religion=religion,
             country_of_origin=country_of_origin,
         ))
 
-    _log_balance(conditions, topics, age_groups, genders, values, religions, countries_of_origin)
+    _log_balance(conditions, topics, age_groups, genders, stances, religions, countries_of_origin)
     return conditions
 
 
@@ -94,7 +95,7 @@ def _log_balance(
     topics: list[str],
     age_groups: list[str],
     genders: list[str],
-    values: list[str],
+    stances: list[str],
     religions: list[str],
     countries_of_origin: list[str],
 ) -> None:
@@ -104,7 +105,7 @@ def _log_balance(
         ("topic",             topics),
         ("age_group",         age_groups),
         ("gender",            genders),
-        ("values",            values),
+        ("stance",            stances),
         ("religion",          religions),
         ("country_of_origin", countries_of_origin),
     ]:

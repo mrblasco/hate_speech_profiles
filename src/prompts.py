@@ -50,6 +50,10 @@ class PromptBuilder:
     def profile(self, **kw: object) -> tuple[str, str, str]:
         return self.build("profile_generation", **kw)
 
+    def profile_free(self, **kw: object) -> tuple[str, str, str]:
+        """Profile generation for CSV mode: LLM chooses age_group and religion freely."""
+        return self.build("profile_generation_free", **kw)
+
     def post(self, **kw: object) -> tuple[str, str, str]:
         return self.build("post_generation", **kw)
 

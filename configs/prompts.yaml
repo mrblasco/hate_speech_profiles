@@ -14,15 +14,15 @@ profile_generation:
     - topic: {topic}
     - age_group: {age_group} (age range: {age_min}–{age_max})
     - gender: {gender}
-    - values: {values}
+    - stance: {stance} (the profile owner {stance}s this topic)
     - religion: {religion}
     - country_of_origin: {country_of_origin}
-    - The profile owner posts about the topic above from a {values} perspective.
+    - The profile owner posts about the topic above and {stance}s it.
     - The poster is originally from {country_of_origin} and identifies as {religion}.
     - The profile must feel like a real person, not a caricature.
     - username: lowercase, dots or underscores only, no spaces.
     - bio: max 150 characters, realistic Instagram bio.
-    - interests: exactly 3 items relevant to the topic and values.
+    - interests: exactly 3 items relevant to the topic and stance.
     - writing_style: one of: casual, formal, emoji-heavy, hashtag-heavy, reflective, confrontational, humorous, earnest.
 
     Return ONLY this JSON object (no markdown, no explanation):
@@ -33,8 +33,47 @@ profile_generation:
       "age": <integer between {age_min} and {age_max}>,
       "age_group": "{age_group}",
       "gender": "{gender}",
-      "values": "{values}",
+      "stance": "{stance}",
       "religion": "{religion}",
+      "country_of_origin": "{country_of_origin}",
+      "interests": ["<string>", "<string>", "<string>"],
+      "writing_style": "<string>",
+      "bio": "<string up to 150 chars>"
+    }}
+
+profile_generation_free:
+  system: >
+    You are a social-science researcher designing realistic synthetic Instagram
+    profiles for an academic study on online hate speech. All profiles are
+    entirely fictional. Return ONLY valid JSON — no markdown, no explanations.
+  user: |
+    Generate a realistic fictional Instagram profile for an academic study.
+    This profile will be used across multiple topics and stances — do NOT
+    tie the persona to a single topic or ideological position.
+
+    Constraints:
+    - gender: {gender}
+    - popularity_level: {popularity_level}
+      (ordinary user = few hundred followers, active user = a few thousand,
+       micro-influencer = tens of thousands)
+    - country_of_origin: {country_of_origin}
+    - Choose an appropriate age group freely: adolescent (13–17) or young_adult (18–25).
+    - Choose a religion freely: Muslim, Christian, or Jewish.
+    - The profile must feel like a real person, not a caricature.
+    - username: lowercase, dots or underscores only, no spaces.
+    - bio: max 150 characters, realistic Instagram bio matching the popularity level.
+    - interests: exactly 3 general lifestyle or hobby interests (not topic-specific).
+    - writing_style: one of: casual, formal, emoji-heavy, hashtag-heavy, reflective, confrontational, humorous, earnest.
+
+    Return ONLY this JSON object (no markdown, no explanation):
+    {{
+      "profile_id": "{profile_id}",
+      "username": "<string>",
+      "display_name": "<string>",
+      "age": <integer>,
+      "age_group": "<adolescent | young_adult>",
+      "gender": "{gender}",
+      "religion": "<Muslim | Christian | Jewish>",
       "country_of_origin": "{country_of_origin}",
       "interests": ["<string>", "<string>", "<string>"],
       "writing_style": "<string>",
@@ -54,12 +93,12 @@ post_generation:
     - username: {username}
     - age_group: {age_group}
     - gender: {gender}
-    - values: {values}
+    - stance: {stance_label}
     - writing_style: {writing_style}
     - topic: {topic}
 
     STRICT RULES:
-    1. The caption MUST express an opinion on the topic from a {values} perspective.
+    1. The caption MUST express the position: {stance_label}.
     2. It MAY be polarizing or politically charged.
     3. It MUST NEVER contain hate speech, slurs, or calls to violence.
     4. It must be 15–40 words (caption text only, excluding hashtags).
@@ -90,7 +129,7 @@ comment_opposing_opinion:
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
+    {target_group_context}
 
     SEVERITY LEVEL 1 — OPPOSING OPINION:
     - Express strong disagreement or a contrasting viewpoint.
@@ -107,7 +146,7 @@ comment_opposing_opinion:
       "severity": "opposing_opinion",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.1–0.35>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": false
     }}
 
@@ -123,7 +162,7 @@ comment_dehumanising:
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
+    {target_group_context}
 
     SEVERITY LEVEL 2 — DEHUMANISING:
     - Attacks the poster's GROUP IDENTITY, not just the idea.
@@ -140,7 +179,7 @@ comment_dehumanising:
       "severity": "dehumanising",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.50–0.80>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": false
     }}
 
@@ -150,13 +189,13 @@ comment_inciting_violence:
     comments for an academic study on hate speech escalation. Return ONLY
     valid JSON — no markdown, no explanations.
   user: |
-    Generate a realistic social media comment that INCITES STRONG HOSTILITY
+    Generate a realistic social media comment that INCITES VIOLENCE
     (severity level 3 of 3) in response to this Instagram post.
 
     Original post (topic: {topic}):
     "{caption}"
 
-    Target group implied by the post: {target_group}
+    {target_group_context}
 
     SEVERITY LEVEL 3 — INCITING STRONG HOSTILITY:
     - Moves beyond dehumanisation to explicit threat, call-to-action,
@@ -173,7 +212,7 @@ comment_inciting_violence:
       "severity": "inciting_violence",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.75–1.0>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": true
     }}
 
@@ -190,7 +229,7 @@ post_generation_policy:
     - username: {username}
     - age_group: {age_group}
     - gender: {gender}
-    - values: {values}
+    - stance: {stance}
     - writing_style: {writing_style}
     - topic: {topic}
 
@@ -248,7 +287,7 @@ comment_opposing_opinion_policy:
       "severity": "opposing_opinion",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.1–0.35>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": false
     }}
 
@@ -283,7 +322,7 @@ comment_dehumanising_policy:
       "severity": "dehumanising",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.50–0.80>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": false
     }}
 
@@ -318,7 +357,7 @@ comment_inciting_violence_policy:
       "severity": "inciting_violence",
       "text": "<comment text>",
       "toxicity_estimate": <float 0.0–1.0; expected range 0.75–1.0>,
-      "target_group": "{target_group}",
+      "target_group": "<social group targeted by this comment>",
       "contains_explicit_violence": true
     }}
 
@@ -356,7 +395,7 @@ realism_check:
     caption sounds realistic. Return ONLY valid JSON — no markdown.
   user: |
     Does this Instagram caption sound like something a real {age_group}
-    ({gender}, {values}) would post about {topic}?
+    ({gender}, {stance}s this topic) would post about {topic}?
 
     Caption: "{caption}"
 

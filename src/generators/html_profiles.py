@@ -20,14 +20,13 @@ from src.utils.logging_utils import get_logger
 from src.utils.seeds import derive_seed
 from src.generators.html_stimuli import (
     AVATAR_COLOURS,
-    TOPIC_GRADIENTS,
-    TOPIC_EMOJIS,
     SCREENSHOT_BATCH_SIZE,
     SCREENSHOT_VIEWPORT,
-    _FALLBACK_GRADIENT,
     _pick,
     _avatar_initials,
     take_screenshots,
+    _topic_gradient,
+    _topic_emoji,
 )
 
 log = get_logger("generators.html_profiles")
@@ -121,7 +120,7 @@ def build_profile_context(profile: object, topic: str, css: str, base_seed: int)
 
     religion_str = _enum_str(getattr(profile, "religion", None))
     country_str  = _enum_str(getattr(profile, "country_of_origin", None))
-    values_str   = _enum_str(getattr(profile, "values", None))
+    stance_str   = _enum_str(getattr(profile, "stance", None))
 
     return {
         "css":              css,
@@ -135,8 +134,8 @@ def build_profile_context(profile: object, topic: str, css: str, base_seed: int)
         "followers":        followers,
         "following":        following,
         "topic":            topic,
-        "topic_emoji":      TOPIC_EMOJIS.get(topic, "📱"),
-        "values":           values_str,
+        "topic_emoji":      _topic_emoji(topic),
+        "stance":           stance_str,
         "religion":         religion_str,
         "religion_emoji":   RELIGION_EMOJIS.get(religion_str, "🙏"),
         "country_of_origin": country_str,

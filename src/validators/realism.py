@@ -36,9 +36,9 @@ async def check_post_realism(
     seed = derive_seed(base_seed, "realism", post.post_id)
 
     system, user, _ = prompt_builder.realism_check(
-        age_group=condition.age_group,
+        age_group=condition.age_group or "young_adult",
         gender=condition.gender,
-        values=condition.values,
+        stance=condition.stance or "support",
         topic=post.topic.value,
         caption=post.caption,
     )

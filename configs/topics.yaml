@@ -1,0 +1,128 @@
+## Topic registry — single source of truth for all topic metadata.
+##
+## Social scientists: edit this file to add topics, adjust descriptions,
+## or change visual styling. No Python changes needed.
+##
+## Fields per topic:
+##   csv_label     — value used in the R-generated input CSV (topics column)
+##   prompt_label  — concrete policy statement injected into LLM prompts
+##                   e.g. "introducing gender quotas in political elections"
+##   stance_labels:
+##     support     — topic-specific stance text when the profile supports the policy
+##     oppose      — topic-specific stance text when the profile opposes the policy
+##   gradient      — CSS gradient for the post image card (web colours)
+##   emoji         — single emoji shown on the post image card
+##   target_groups (optional):
+##     support     — social group the poster aligns with; comments will attack this group
+##     oppose      — social group the poster aligns with when opposing; comments attack this group
+##                   Omit this block entirely to let the LLM infer the target from context.
+
+topics:
+
+  feminism:
+    csv_label:    "feminism_gender_quotas"
+    prompt_label: "introducing gender quotas in political elections"
+    stance_labels:
+      support: "support gender quotas"
+      oppose:  "oppose gender quotas"
+    gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+    emoji:    "✊"
+    target_groups:
+      support: "women and feminist activists"
+      oppose:  "traditionalist women and men"
+
+  climate:
+    csv_label:    "climate_action"
+    prompt_label: "binding government targets to reduce carbon emissions"
+    stance_labels:
+      support: "support binding emissions targets"
+      oppose:  "oppose binding emissions targets"
+    gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)"
+    emoji:    "🌱"
+    target_groups:
+      support: "climate activists and environmental advocates"
+      oppose:  "climate-change sceptics and industry lobbies"
+
+  immigration:
+    csv_label:    "migrant_access_welfare"
+    prompt_label: "extending welfare benefits to undocumented migrants"
+    stance_labels:
+      support: "support welfare access for undocumented migrants"
+      oppose:  "oppose welfare access for undocumented migrants"
+    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    emoji:    "🌍"
+    target_groups:
+      support: "migrants, refugees, and immigration advocates"
+      oppose:  "immigration restriction advocates"
+
+  racism:
+    csv_label:    "combat_racial_discrimination"
+    prompt_label: "mandatory anti-racism training in public institutions"
+    stance_labels:
+      support: "support mandatory anti-racism training"
+      oppose:  "oppose mandatory anti-racism training"
+    gradient: "linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)"
+    emoji:    "✊🏾"
+    target_groups:
+      support: "racialised minorities and anti-racism advocates"
+      oppose:  "critics of race-based institutional policy"
+
+  gender:
+    csv_label:    "lgbtq_rights"
+    prompt_label: "legal recognition of gender self-identification"
+    stance_labels:
+      support: "support legal gender self-identification"
+      oppose:  "oppose legal gender self-identification"
+    gradient: "linear-gradient(135deg, #f7971e 0%, #ffd200 100%)"
+    emoji:    "🏳️‍🌈"
+    target_groups:
+      support: "transgender and non-binary people and their allies"
+      oppose:  "gender-critical communities"
+
+  national_identity:
+    csv_label:    "multi_culturalism"
+    prompt_label: "state promotion of multicultural integration policies"
+    stance_labels:
+      support: "support multicultural integration policies"
+      oppose:  "oppose multicultural integration policies"
+    gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)"
+    emoji:    "🏴"
+    target_groups:
+      support: "immigrant communities and multiculturalism advocates"
+      oppose:  "national identity and assimilation advocates"
+
+  religion:
+    csv_label:    "religion"
+    prompt_label: "granting religious exemptions from anti-discrimination law"
+    stance_labels:
+      support: "support religious exemptions from anti-discrimination law"
+      oppose:  "oppose religious exemptions from anti-discrimination law"
+    gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+    emoji:    "🕌"
+    target_groups:
+      support: "religious communities and faith groups"
+      oppose:  "secularists and LGBTQ+ rights advocates"
+
+  public_health:
+    csv_label:    "public_health"
+    prompt_label: "making childhood vaccinations compulsory by law"
+    stance_labels:
+      support: "support compulsory childhood vaccination"
+      oppose:  "oppose compulsory childhood vaccination"
+    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    emoji:    "💉"
+    target_groups:
+      support: "public health advocates and medical professionals"
+      oppose:  "vaccine sceptics and parental choice advocates"
+
+  hate_speech:
+    csv_label:    "combat_hate_speech"
+    prompt_label: "criminalising online hate speech through platform regulation, especially countering anti‑Jewish and anti‑Muslim hate speech online"
+    stance_labels:
+      support: "support criminalising online hate speech"
+      oppose:  "oppose criminalising online hate speech"
+    gradient: "linear-gradient(135deg, #c94b4b 0%, #4b134f 100%)"
+    emoji:    "🚫"
+    target_groups:
+      support: "hate speech victims and content moderation advocates"
+      oppose:  "free-speech absolutists"
